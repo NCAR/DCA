@@ -51,17 +51,18 @@ R -f clim.R
 -------------
 TODO
 
-plotfun commentary
+# github repo
+
+# plotfun commentary
 
 # move .Rdata files into data
 X script.R generates data/script.Rdata?
-
 
 # bucketize precip
 # bucket plots:
 # stacked barplot by method w/ o/c/f
 . unstacked "
-iterate
+iterate + gangplot
 
 calculate anomaly by bucket
 gridmaps: may climatology (baseline + bucketized)
