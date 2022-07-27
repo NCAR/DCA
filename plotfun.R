@@ -1,8 +1,27 @@
 library(maps)
 
 ## clean data - drop NA & values outside range
-## TODO: clamp option - none / upper / lower / both
-clean <- function(x, lower=-Inf, upper=Inf){
+## TODO: clamp vs trim
+## TODO: inclusive / exclusive range
+clean <- function(x, range=c(lower,upper), lower=-Inf, upper=Inf){
+
+    ## argument checking
+    if(!all(sapply(c(lower,upper,range), is.numeric))){
+        stop("non-numeric limits")
+    }
+
+    if(!missing(range) && (!missing(lower) || !missing(upper))){
+        stop("can't specify both range and lower/upper")
+    }
+
+    if(!missing(range)){
+        # if we're here, lower & upper must be default
+        stopifnot(length(range)==2)
+        lower <- range[1]; upper <- range[2]
+    }
+    
+    if(upper < lower) stop("upper must be > lower")
+
     x[is.finite(x) & x >= lower & x <= upper]
 }
 
