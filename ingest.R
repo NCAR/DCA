@@ -202,4 +202,5 @@ save(file="data/prec.Rdata", gcm, methods, periods, perspan,
 save(file="data/ua.Rdata", gcm, lats, lat, lon, periods, perspan,
      uaunits, ua, vars)
 
-
+save(file="data/misc.Rdata", gcm, lats, lat, lon, methods, periods,
+     perspan, px, py, uaunits, vars)

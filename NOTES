@@ -8,7 +8,8 @@ SCRIPTS
 
 1) ingest.R generates:
 
-data/prec.Rdata 
+data/prec.Rdata				# precip data
+
 gcm
 methods[]
 periods[]
@@ -18,9 +19,10 @@ px[]
 py[]
 
 
-data/ua.Rdata
+data/ua.Rdata				# MPI upper atmosphere data
+
 gcm
-lats[]  # string-formatted; 2 decimals
+lats[]					# string-formatted; 2 decimals
 lat[]
 lon[]
 periods[]
@@ -29,18 +31,34 @@ uaunits
 ua$period[var,lon,lat,day,month,year]
 vars[]
 
-2) clim.R: clim/anom decomposition; generates:
 
-data/clim.Rdata
+2) clim.R generates:
+
+data/clim.Rdata				# climatology/anomaly decompos'n
 
 ## PAUSE - refactor data planned
 #clim$period$clim[var,lon,lat]
 #	    seas[var,lon,lat,month]
 #	    anom[var,lon,lat,day,month,year]
 
-3) bucket.R
+3) bucket.R: 
+
+data/buckets.Rdata			# precip aggregated by amount
+
+buckets						# dry / moist / wet
+bprec$period[method,px,py,day,month,year]	# bucketized precip
+bstat${count|pct}$period[bucket,method,px,py,month]
+theta						# 3 mm threshold
+trace						# 0.254 mm = 1/100" threshold
+
 
 -------------
+A) barplots.R				# barplots of bucket stats
+
+
+
+-------------
+
 date
 R -f ingest.R
 date
