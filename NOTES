@@ -80,7 +80,10 @@ X script.R generates data/script.Rdata?
 # bucket plots:
 # stacked barplot by method w/ o/c/f
 . unstacked "
-iterate + gangplot
+.iterate + gangplot
+.	by method?  by month (calendar layout?)
+
+.gangplot: layout + function + f'n args
 
 calculate anomaly by bucket
 gridmaps: may climatology (baseline + bucketized)
@@ -91,7 +94,10 @@ all x o,c,f
 
 PCA on daily may anomalies
 varimax rotation on modes
-metR package?  (rotate=TRUE for varimax...)
+x metR package?  (rotate=TRUE for varimax...)
+CSTools - multivariate EOF
+	need to merge YMD using R.utils::(un?)wrap()
+	edit ingest to use R.utils?
 
 
 instp precip plots w/ calendar layout?
