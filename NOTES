@@ -128,3 +128,11 @@ see self-email for packages for SSIM, PCA, varimax
 
 add method: regression model(s?) using downscaleR
 run over all CONUS gridcells?
+
+-------------------
+
+NOTES
+
+MPI uses standard gregorian calendar *with* leap-days.
+WRF-MPI skips the leap days (365-day calendar).
+

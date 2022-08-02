@@ -36,4 +36,6 @@ setname <- function(object, nm,
 }
 
 
+## convenience function
 
+dimnamename <- function(x){names(dimnames(x))}

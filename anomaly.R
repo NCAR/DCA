@@ -3,7 +3,7 @@
 load("data/ua.Rdata")
 load("data/misc.Rdata")
 load("data/buckets.Rdata")
-
+source("names.R")
 
 ## We have 3 buckets (dry/moist/wet), plus "all" (no bucket)
 ## For each bucket, we calculate:
@@ -42,18 +42,42 @@ px = "x098"
 py = "y36"
 p = "hist"
 
-mua <- ua[[p]][,,,,m,]
+#mua <- ua[[p]][,,,,m,]
+## subset to month, wrap YMD to single dimension, fix dimnames
+mua <- ua[[p]][,,,,m,,drop=FALSE] |>
+    wrap(list(1,2,3,4:6)) |>
+    setname(c(dimnamename(ua[[p]])[1:3],"date"),"ndn", 1:4)
 
-mxybuck <- bprec[[p]][,px,py,,m,]
+#mxybuck <- bprec[[p]][,px,py,,m,]
+## subset to loc (dropping dims), then to month & wrap YMD as above
+mxybuck <- bprec[[p]][,px,py,,,][,,m,,drop=FALSE] |>
+    wrap(list(1,2:4)) |>
+    setname(c("method","date"), "ndn", 1:2)
 
+## construct masks for each bucket (+"all" = union of the 3)
 bmask <- list()
-bmask$all <- mxybuck %in% buckets
+bmask$all <- mxybuck %in% buckets |> array(dim(mxybuck), dimnames(mxybuck))
 for(b in buckets){
     bmask[[b]] <- (mxybuck == b) & bmask$all
 }
 
-for(b in names(bmask)){
-    for(m in methods)
+### convert masks to arrays of index values
+#bindex <- lapply(bmask, asplit, MARGIN=1)|>
+#    rapply(which, classes="array", how="replace", arr.ind=TRUE)
+
+for(b in c("all", buckets){
+    for(mm in methods){
+
+#        mslice <- mua
+#        ## average over each month
+#        mslice <- mua[,,,iday,iyear] ## that's not what I want...
+        mslice <- mua[,,,bmask[[b]][mm,]]
+        climatology <- apply(mslice, 1:3, mean, na.rm=TRUE)
+        
+ #       monthly <- apply(mslice, c("var","lon","lat","year"), mean, na.rm=TRUE)
+
+        
+        
     monthly <- ...
     
     ## monthly[12*N]: average over each month
