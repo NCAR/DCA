@@ -29,7 +29,6 @@ sffields <- c("var", "period", "gcm", "method", "freq",
 
 ## read in all precip files for this GCM
 pindirs <- c("data/obs/surf","data/MPI/surf")
-#sfiles <- list.files("data/MPI/surf", "prec.*.nc", recursive=TRUE, full=TRUE)
 sfiles <- list.files(pindirs, "prec.*.nc", recursive=TRUE, full=TRUE)
 ncsurf <- lapply(sfiles, nc_ingest)
 
@@ -53,16 +52,41 @@ methods <- c("raw","RegCM4","WRF","CNN","LOCA","MBCn","KDDM","SDSM","dummy")
 
 
 ## fold precip timeseries to YMD arrays
-plist <- lapply(ncsurf, function(nc){foldtime(nc$prec, nctime2ymd(nc$time))})
+#plist <- lapply(ncsurf, function(nc){foldtime(nc$prec, nctime2ymd(nc$time))})
 
+## extract precip timeseries
+plist <- lapply(ncsurf, `[[`, "prec")
+
+## extract time & convert to YMD
+tlist <- lapply(ncsurf, `[[`, "time") |> lapply(nctime2ymd)
 
 ## add dummy method = raw data shuffled by month
 set.seed(222)
 
 iraw <- which(pmeta$method == "raw")
 ssample <- function(x){sample(x) |> setname(names(x))}  ## preserve names
-dummy <- lapply(plist[iraw], apply, 2:3, ssample)
+#dummy <- lapply(plist[iraw], apply, 2:3, ssample)
+
+
+dprec <- plist[iraw]
+dtime <- lapply(tlist[iraw], ymdreformat) |> lapply(ymd2array)
+
+dummy <- mapply(foldtime, dprec, dtime, SIMPLIFY=FALSE) |>
+    lapply(apply, c("month","year"), ssample)
+
+
+|>
+    lapply(unfoldtime)
+
+
+
+dummy <- mapply(foldtime, plist[iraw], lapply(tlist[iraw],ymd2array)) |>
+    lapply(apply, 2:3, sample) |>
+...    lapply(unfoldtime)
 plist <- c(plist, dummy)
+
+
+
 
 dmeta <- pmeta[iraw,]
 dmeta$method <- "dummy"

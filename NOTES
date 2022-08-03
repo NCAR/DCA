@@ -76,6 +76,8 @@ TODO
 # move .Rdata files into data
 X script.R generates data/script.Rdata?
 
+redo time.R, create YMD S3 class to unify ymdstr & ymdarr?
+
 # bucketize precip
 # bucket plots:
 # stacked barplot by method w/ o/c/f
