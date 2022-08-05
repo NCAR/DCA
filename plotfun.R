@@ -1,39 +1,5 @@
 library(maps)
 
-## clean data - drop NA & values outside range
-## TODO: clamp vs trim
-## TODO: inclusive / exclusive range
-clean <- function(x, range=c(lower,upper), lower=-Inf, upper=Inf){
-
-    ## argument checking
-    if(!all(sapply(c(lower,upper,range), is.numeric))){
-        stop("non-numeric limits")
-    }
-
-    if(!missing(range) && (!missing(lower) || !missing(upper))){
-        stop("can't specify both range and lower/upper")
-    }
-
-    if(!missing(range)){
-        # if we're here, lower & upper must be default
-        stopifnot(length(range)==2)
-        lower <- range[1]; upper <- range[2]
-    }
-    
-    if(upper < lower) stop("upper must be > lower")
-
-    x[is.finite(x) & x >= lower & x <= upper]
-}
-
-
-## range() with correct default for na.rm
-narange <- function(...){range(..., na.rm=TRUE)}
-
-
-## symmetric range around zero
-srange <- function(...){c(-1,1)*max(narange(...))}
-
-
 ## plot that uses symmetric ranges for both axes
 symplot <- function(xylim=narange(x, y), ...){
     plot(xlim=xylim, ylim=xylim, ...)
@@ -109,8 +75,8 @@ distplots <- function(x, y, xylim=narange(x,y),
     abline(v=lower, h=lower, col='gray', lty=2)
     abline(v=upper, h=upper, col='gray', lty=3)
 
-    xx <- clean(x, lower=lower, upper=upper)
-    yy <- clean(y, lower=lower, upper=upper)
+    xx <- trim(x, lower=lower, upper=upper)
+    yy <- trim(y, lower=lower, upper=upper)
     
     hist2(xx, yy, xlim=xylim, main='', ann=FALSE)
     abline(v=c(lower, upper), col='gray', lty=c(2,3))
