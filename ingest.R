@@ -7,8 +7,6 @@ source("util.R")
 library(devtools)
 load_all("~/climod")
 
-library(data.table)
-
 
 #GCM <- "MPI-ESM-LR"
 gcm <- "MPI"
@@ -60,19 +58,7 @@ tlist <- lapply(ncsurf, `[[`, "time") |> lapply(cftime2ymd)
 
 
 
-## This approach is clean & idiomatic, but too slow (>10 minutes)
-
-# ## build dataframe for each input file
-# 
-# precdf <- list()
-# for(i in 1:length(ncsurf)){
-#     precdf[[i]] <- data.frame(tlist[[i]], plist[[i]]) |>
-#         setname(c("date",pmeta$method[i]), "col") |>
-#             cbind(pmeta[i,c("period","px","py")])
-# }
-#
-# ## merge dataframes into one big dataframe
-# allprec <- Reduce(function(x,y) merge(x,y,all=TRUE), precdf))
+## merge()ing dataframes is clean & idiomatic, but too slow (>10 minutes)
 
 ## create per-period dataframes by hand
 
@@ -117,53 +103,8 @@ for(p in periods){
 
 
 
-##  create dummy (split)
+##  create dummy downscaling method (shuffle data by month)
 modelperiods <- periods[! periods %in% "obs"]
-
-
-## quite a bit slower than split() approach
-
-# date()
-# for(p in modelperiods){
-#     d <- dfs[[p]]
-#     dummy <- c()
-#     for(x in px){
-#         for(y in py) {
-#             for(yr in unique(d$year)){
-#                 for(m in 1:12){
-#                     mindex <- d$year==yr & d$month==m & d$px == x & d$py == y
-#                     dummy[mindex] <- sample(d$raw[mindex])
-#                 }
-#             }
-#         }
-#     }
-#     dfs[[p]]$dummy <- dummy
-# }
-# date()
-
-
-# ## Kinda pointless since there are a lot of degenerate zero values,
-# ## but if we wanted to guarantee that dummy had no values matching
-# ## original position, we'd use this instead of sample():
-# 
-# swap <- function(x,i,j){
-#     y <- x
-#     y[i] <- x[j]
-#     y[j] <- x[i]
-#     return(y)
-# }
-# 
-# nmshuffle <- function(x){
-#     n <- length(x)
-#     if(n %% 2) n <- n - 1
-#     i <- sample(1:n, n/2)
-#     j <- (1:n)[-i]
-#     y <- swap(x, i, j)
-#     if(length(x)%%2) {
-#         y <- swap(y, length(x), sample(1:n, 1))
-#     }
-#     return(y)
-# }
 
 
 set.seed(222)
@@ -288,14 +229,6 @@ vars <- c("U850","V850","Q850","T700","Z700","Z500","U250","V250")
 uaunits <- sapply(uadata, `@`, "units")[vars]
 
 
-# ## fold ua data to YMD arrays
-# ## (takes about 5-6 minutes)
-# ualist <- mapply(foldtimeND, uadata, lapply(uatime, nctime2ymd), SIMPLIFY=FALSE)
-# 
-# 
-# ## combine folded data slabs into multidim data arrays:
-# ## ua$period[var, lon, lat, day, month, year]
-
 ## combine data slabs into multidim array:
 ## ua$period[var, lon, lat, date]
 
@@ -305,12 +238,6 @@ uaunits <- sapply(uadata, `@`, "units")[vars]
 
 ## Note: uameta no longer needed
 
-# ua <- list()
-
-#for(p in periods){
-#    ua[[p]] <- abind(var=ualist[uameta$period==p][vars], along=0, use.dnns=TRUE)
-#    names(dimnames(ua[[p]]))[1] <- "var"
-#}
 
 ua <- list()
 

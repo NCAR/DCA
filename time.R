@@ -61,7 +61,7 @@ cftime2ymd <- function(nctime, format="%Y-%b-%d"){
 
 
 ## convert YMD string formats
-ymdstr2date <- function(ymd,
+ymdreformat <- function(ymd,
                         infmt="%Y-%b-%d",
                         outfmt="%Y-%m-%d",
                         cal="standard"){

@@ -32,7 +32,7 @@ ua$period[var,lon,lat,day,month,year]
 vars[]
 
 
-2) clim.R generates:
+ 2) clim.R generates:
 
 data/clim.Rdata				# climatology/anomaly decompos'n
 
@@ -75,8 +75,6 @@ TODO
 
 # move .Rdata files into data
 X script.R generates data/script.Rdata?
-
-redo time.R, create YMD S3 class to unify ymdstr & ymdarr?
 
 # bucketize precip
 # bucket plots:
@@ -130,6 +128,9 @@ see self-email for packages for SSIM, PCA, varimax
 
 add method: regression model(s?) using downscaleR
 run over all CONUS gridcells?
+
+
+get util.R .checkargs() to work
 
 -------------------
 
