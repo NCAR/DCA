@@ -2,6 +2,7 @@
 
 source("names.R")
 source("time.R")
+source("util.R")
 
 library(devtools)
 load_all("~/climod")
@@ -14,7 +15,7 @@ gcm <- "MPI"
 
 
 #######
-## read in precip data
+## read precip into two data frame, one for obs, one for models
 
 ## input files:
 ## data/gcm/surf/method/period/var/
@@ -40,7 +41,7 @@ pmeta <- gsub(pat=".*/", rep="", sfiles) |>
     as.data.frame()
 
 
-## get dimvar values
+## get vectors of indexing values 
 periods <- unique(pmeta$period)
 perspan <- unique(pmeta[c("period","span")])$span |> setname(periods)
 px <- sort(unique(pmeta$px))
@@ -51,49 +52,197 @@ py <- sort(unique(pmeta$py))
 methods <- c("raw","RegCM4","WRF","CNN","LOCA","MBCn","KDDM","SDSM","dummy")
 
 
-## fold precip timeseries to YMD arrays
-#plist <- lapply(ncsurf, function(nc){foldtime(nc$prec, nctime2ymd(nc$time))})
-
 ## extract precip timeseries
 plist <- lapply(ncsurf, `[[`, "prec")
 
 ## extract time & convert to YMD
-tlist <- lapply(ncsurf, `[[`, "time") |> lapply(nctime2ymd)
+tlist <- lapply(ncsurf, `[[`, "time") |> lapply(cftime2ymd)
 
-## add dummy method = raw data shuffled by month
+
+
+## This approach is clean & idiomatic, but too slow (>10 minutes)
+
+# ## build dataframe for each input file
+# 
+# precdf <- list()
+# for(i in 1:length(ncsurf)){
+#     precdf[[i]] <- data.frame(tlist[[i]], plist[[i]]) |>
+#         setname(c("date",pmeta$method[i]), "col") |>
+#             cbind(pmeta[i,c("period","px","py")])
+# }
+#
+# ## merge dataframes into one big dataframe
+# allprec <- Reduce(function(x,y) merge(x,y,all=TRUE), precdf))
+
+## create per-period dataframes by hand
+
+dfs <- list()
+
+## create dataframes (per period) with date, px, py, period
+
+for(p in periods){
+    alldates <- unlist(tlist[pmeta$period==p]) |> unique()
+
+    # Not needed for this data
+#    checkdates <- ymdreformat(alldates) |>
+#        sort() |>
+#        ymdreformat("%Y-%m-%d", "%Y-%b-%d")
+#    stopifnot(all(alldates == checkdates))
+    
+    dfs[[p]] <- expand.grid(date=alldates, py=py, px=px, period=p,
+                            stringsAsFactors=FALSE)
+}
+
+
+## stuff data into dataframe
+
+for(i in 1:nrow(pmeta)){
+    p = pmeta$period[i]
+    pidx <- dfs[[p]]$date %in% tlist[[i]] &
+        dfs[[p]]$px == pmeta$px[i] &
+        dfs[[p]]$py == pmeta$py[i]
+        
+    dfs[[p]][pidx, pmeta$method[i]] <- plist[[i]]
+}
+
+
+##  split date to numeric y / m / d
+
+for(p in periods){
+    pymd <- strsplit(dfs[[p]]$date, "-") |> transpose()
+    dfs[[p]]$year <- as.numeric(pymd[[1]])
+    dfs[[p]]$month <- match(pymd[[2]], month.abb)
+    dfs[[p]]$day <- as.numeric(pymd[[3]])    
+}
+
+
+
+##  create dummy (split)
+modelperiods <- periods[! periods %in% "obs"]
+
+
+## quite a bit slower than split() approach
+
+# date()
+# for(p in modelperiods){
+#     d <- dfs[[p]]
+#     dummy <- c()
+#     for(x in px){
+#         for(y in py) {
+#             for(yr in unique(d$year)){
+#                 for(m in 1:12){
+#                     mindex <- d$year==yr & d$month==m & d$px == x & d$py == y
+#                     dummy[mindex] <- sample(d$raw[mindex])
+#                 }
+#             }
+#         }
+#     }
+#     dfs[[p]]$dummy <- dummy
+# }
+# date()
+
+
+# ## Kinda pointless since there are a lot of degenerate zero values,
+# ## but if we wanted to guarantee that dummy had no values matching
+# ## original position, we'd use this instead of sample():
+# 
+# swap <- function(x,i,j){
+#     y <- x
+#     y[i] <- x[j]
+#     y[j] <- x[i]
+#     return(y)
+# }
+# 
+# nmshuffle <- function(x){
+#     n <- length(x)
+#     if(n %% 2) n <- n - 1
+#     i <- sample(1:n, n/2)
+#     j <- (1:n)[-i]
+#     y <- swap(x, i, j)
+#     if(length(x)%%2) {
+#         y <- swap(y, length(x), sample(1:n, 1))
+#     }
+#     return(y)
+# }
+
+
 set.seed(222)
 
-iraw <- which(pmeta$method == "raw")
-ssample <- function(x){sample(x) |> setname(names(x))}  ## preserve names
+for(p in modelperiods){
+    d <- split(dfs[[p]], ~ month + year + py + px)
+    e <- lapply(d, function(x){x$dummy <- sample(x$raw);x})
+    dfs[[p]] <- do.call(rbind, e)
+}
+
+## probably it would be more efficient not to duplicate the rest of
+## the dataframe during split(), but this way I can validate that
+## everything matches up afterwards.
+
+
+
+## misc cleanup
+
+##  convert CNN NA to 0
+for(p in modelperiods){
+    dfs[[p]]$CNN <- clamp(dfs[[p]]$CNN, na=0)
+}
+
+
+##  clamp negative precip values to 0
+for(p in modelperiods){
+    for(m in methods){
+        dfs[[p]][[m]] <- clamp(dfs[[p]][[m]], lower=0)
+    }
+}
+
+
+##  rearrange columns
+
+pc <- c("date","year","month","day","period","px","py")
+
+prec <- list()
+for(p in modelperiods){
+    prec[[p]] <- dfs[[p]][,c(pc, methods)]
+}
+prec[["obs"]] <- dfs$obs[,c(pc, "obs")]
+
+
+stop()
+
+## add dummy method = raw data shuffled by month
+#set.seed(222)
+#
+#iraw <- which(pmeta$method == "raw")
+#ssample <- function(x){sample(x) |> setname(names(x))}  ## preserve names
 #dummy <- lapply(plist[iraw], apply, 2:3, ssample)
 
-
-dprec <- plist[iraw]
-dtime <- lapply(tlist[iraw], ymdreformat) |> lapply(ymd2array)
-
-dummy <- mapply(foldtime, dprec, dtime, SIMPLIFY=FALSE) |>
-    lapply(apply, c("month","year"), ssample)
-
-
-|>
-    lapply(unfoldtime)
-
-
-
-dummy <- mapply(foldtime, plist[iraw], lapply(tlist[iraw],ymd2array)) |>
-    lapply(apply, 2:3, sample) |>
-...    lapply(unfoldtime)
-plist <- c(plist, dummy)
-
-
-
-
-dmeta <- pmeta[iraw,]
-dmeta$method <- "dummy"
-pmeta <- rbind(pmeta, dmeta)
-row.names(pmeta) <- NULL
-
-
+# 
+# dprec <- plist[iraw]
+# dtime <- lapply(tlist[iraw], ymdreformat) |> lapply(ymd2array)
+# 
+# dummy <- mapply(foldtime, dprec, dtime, SIMPLIFY=FALSE) |>
+#     lapply(apply, c("month","year"), ssample)
+# 
+# 
+# |>
+#     lapply(unfoldtime)
+# 
+# 
+# 
+# dummy <- mapply(foldtime, plist[iraw], lapply(tlist[iraw],ymd2array)) |>
+#     lapply(apply, 2:3, sample) |>
+# ...    lapply(unfoldtime)
+# plist <- c(plist, dummy)
+# 
+# 
+# 
+# 
+# dmeta <- pmeta[iraw,]
+# dmeta$method <- "dummy"
+# pmeta <- rbind(pmeta, dmeta)
+# row.names(pmeta) <- NULL
+# 
+# 
 ## combine folded data slabs into multidim data arrays:
 ## prec$period[method, px, py, day, month, year]
 
@@ -103,24 +252,24 @@ row.names(pmeta) <- NULL
 ## eventually: surf$gcm$var$period[method, x, y, day, month, year]
 ## or maybe surf is a dataframe with an array element?  (wrap in list)
 
-pdname <- c(list(method=methods, px=px, py=py), dimnames(plist[[1]]))
-oname <- pdname; oname$method <- c("obs")
-
-prec <- list()
-
-for(p in periods){
-    if(p == "obs"){
-        prec[[p]] <- array(NA, dim=sapply(oname, length), dimnames=oname)
-    } else {
-        prec[[p]] <- array(NA, dim=sapply(pdname, length), dimnames=pdname)
-    }
-}
-
-for(i in 1:length(plist)){
-    b <- pmeta[i,]
-    prec[[b$period]][b$method, b$px, b$py,,,] <- plist[[i]]
-}
-
+# pdname <- c(list(method=methods, px=px, py=py), dimnames(plist[[1]]))
+# oname <- pdname; oname$method <- c("obs")
+# 
+# prec <- list()
+# 
+# for(p in periods){
+#     if(p == "obs"){
+#         prec[[p]] <- array(NA, dim=sapply(oname, length), dimnames=oname)
+#     } else {
+#         prec[[p]] <- array(NA, dim=sapply(pdname, length), dimnames=pdname)
+#     }
+# }
+# 
+# for(i in 1:length(plist)){
+#     b <- pmeta[i,]
+#     prec[[b$period]][b$method, b$px, b$py,,,] <- plist[[i]]
+# }
+# 
 
 #### now do the same for upper atmosphere (ua) data
 
