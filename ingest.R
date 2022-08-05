@@ -207,69 +207,13 @@ for(p in modelperiods){
 prec[["obs"]] <- dfs$obs[,c(pc, "obs")]
 
 
-stop()
-
-## add dummy method = raw data shuffled by month
-#set.seed(222)
-#
-#iraw <- which(pmeta$method == "raw")
-#ssample <- function(x){sample(x) |> setname(names(x))}  ## preserve names
-#dummy <- lapply(plist[iraw], apply, 2:3, ssample)
-
-# 
-# dprec <- plist[iraw]
-# dtime <- lapply(tlist[iraw], ymdreformat) |> lapply(ymd2array)
-# 
-# dummy <- mapply(foldtime, dprec, dtime, SIMPLIFY=FALSE) |>
-#     lapply(apply, c("month","year"), ssample)
-# 
-# 
-# |>
-#     lapply(unfoldtime)
-# 
-# 
-# 
-# dummy <- mapply(foldtime, plist[iraw], lapply(tlist[iraw],ymd2array)) |>
-#     lapply(apply, 2:3, sample) |>
-# ...    lapply(unfoldtime)
-# plist <- c(plist, dummy)
-# 
-# 
-# 
-# 
-# dmeta <- pmeta[iraw,]
-# dmeta$method <- "dummy"
-# pmeta <- rbind(pmeta, dmeta)
-# row.names(pmeta) <- NULL
-# 
-# 
-## combine folded data slabs into multidim data arrays:
-## prec$period[method, px, py, day, month, year]
-
 ## Note: pmeta maps info about plist; not needed once multi-dim data
 ## arrays are created.
 
 ## eventually: surf$gcm$var$period[method, x, y, day, month, year]
 ## or maybe surf is a dataframe with an array element?  (wrap in list)
 
-# pdname <- c(list(method=methods, px=px, py=py), dimnames(plist[[1]]))
-# oname <- pdname; oname$method <- c("obs")
-# 
-# prec <- list()
-# 
-# for(p in periods){
-#     if(p == "obs"){
-#         prec[[p]] <- array(NA, dim=sapply(oname, length), dimnames=oname)
-#     } else {
-#         prec[[p]] <- array(NA, dim=sapply(pdname, length), dimnames=pdname)
-#     }
-# }
-# 
-# for(i in 1:length(plist)){
-#     b <- pmeta[i,]
-#     prec[[b$period]][b$method, b$px, b$py,,,] <- plist[[i]]
-# }
-# 
+
 
 #### now do the same for upper atmosphere (ua) data
 
@@ -282,9 +226,8 @@ stop()
 uaffields <- c("var", "plev", "period", "gcm", "raw",
                "freq", "span", "region", "nc")
 
-## read in all precip files for this GCM
+## read in all ua files for this GCM
 uindirs <- c("data/MPI/ua", "data/obs/ua")
-#uafiles <- list.files("data/MPI/ua", "*.nc", recursive=TRUE, full=TRUE)
 uafiles <- list.files(uindirs, "*.nc", recursive=TRUE, full=TRUE)
 ncua <- lapply(uafiles, nc_ingest)
 
@@ -344,13 +287,17 @@ vars <- c("U850","V850","Q850","T700","Z700","Z500","U250","V250")
 ## units
 uaunits <- sapply(uadata, `@`, "units")[vars]
 
-## fold ua data to YMD arrays
-## (takes about 5-6 minutes)
-ualist <- mapply(foldtimeND, uadata, lapply(uatime, nctime2ymd), SIMPLIFY=FALSE)
 
+# ## fold ua data to YMD arrays
+# ## (takes about 5-6 minutes)
+# ualist <- mapply(foldtimeND, uadata, lapply(uatime, nctime2ymd), SIMPLIFY=FALSE)
+# 
+# 
+# ## combine folded data slabs into multidim data arrays:
+# ## ua$period[var, lon, lat, day, month, year]
 
-## combine folded data slabs into multidim data arrays:
-## ua$period[var, lon, lat, day, month, year]
+## combine data slabs into multidim array:
+## ua$period[var, lon, lat, date]
 
 ## eventually: ua$gcm$period[var,lon, lat, day, month, year]
 ## or maybe ua is a dataframe with an array element?  (wrap in list)
@@ -358,12 +305,34 @@ ualist <- mapply(foldtimeND, uadata, lapply(uatime, nctime2ymd), SIMPLIFY=FALSE)
 
 ## Note: uameta no longer needed
 
+# ua <- list()
+
+#for(p in periods){
+#    ua[[p]] <- abind(var=ualist[uameta$period==p][vars], along=0, use.dnns=TRUE)
+#    names(dimnames(ua[[p]]))[1] <- "var"
+#}
+
 ua <- list()
 
 for(p in periods){
-    ua[[p]] <- abind(var=ualist[uameta$period==p][vars], along=0, use.dnns=TRUE)
+    ua[[p]] <- abind(var=uadata[uameta$period==p][vars], along=0, use.dnns=TRUE)
     names(dimnames(ua[[p]]))[1] <- "var"
 }
+
+
+## extract time coordinate for each period
+
+tindex <- uameta$pvar == vars[1]
+
+tcoord <- lapply(uatime[uameta$pvar == vars[1]], cftime2ymd) |>
+    setname(uameta$period[tindex])
+
+## set time coord as dimname on data
+for(p in periods){
+    dimnames(ua[[p]])[[4]] <- tcoord[[p]]
+    names(dimnames(ua[[p]]))[4] <- "date"
+}
+
 
 
 
