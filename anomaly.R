@@ -27,20 +27,113 @@ source("names.R")
 ## Calculate per location and month and save in separate files.
 
 
+rseq <- function(rng){seq(from=min(rng), to=max(rng))}
 
-## baseline: average of each variable over all time in period
+## lists of years in each period
+peryear <- lapply(perspan,  function(s){
+    strsplit(s, '-') |> unlist() |> as.numeric() |> rseq() |> as.character()
+})
 
-baseline <- lapply(ua, apply, c("var","lat","lon"), mean, na.rm=TRUE)
+nyr <- length(peryear[[1]])
+stopifnot(all(sapply(peryear, length) == nyr))
 
 
-#for(m in month.abb){
-#    for(x in px){
-#        for(y in py){
+## The "all" bucket, which is the same across locations
 
-m = "May"
-px = "x098"
-py = "y36"
-p = "hist"
+## baseline climatology: average over all time in period
+
+baseline <- lapply(ua, apply, 1:3, mean, na.rm=TRUE)
+
+
+# ## quick check:
+# dev.new()
+# par(mfrow=c(3,3))
+# for(v in vars) image(baseline$hist[v,,], main=v)
+
+## var-lon-lat dimensions, used for later steps
+cdim <- dim(baseline[[1]])
+cdnm <- dimnames(baseline[[1]])
+
+
+## average over each month
+monthly <- list()
+
+for(p in periods){
+    cat("-----\n",p,'\n')
+    mdim <- c(cdim, nyr, 12)
+    mdnm <- c(cdnm, list(year=peryear[[p]], month=month.abb))
+    monthly[[p]] <- array(dim=mdim, dimnames=mdnm)
+
+    dd <- dimnames(ua[[p]])$date
+
+    for(y in peryear[[p]]){
+        cat(y,'')
+        for(m in month.abb){
+            cat(m,'')
+            ym <- paste0(y, "-", m)
+            ymdex <- grep(ym, dd)
+            monthly[[p]][,,,y,m] <- apply(ua[[p]][,,,ymdex], 1:3, mean)
+        }
+        cat("\n")
+    }
+}
+
+# ## quick check:
+# dev.new()
+# par(mfrow=c(3,3))
+# for(i in 1:8){
+#     v=vars[i]; y=peryear$rcp85[i]; m=month.abb[i]
+#     image(monthly$rcp85[v,,,y,m], main=paste(v,y,m))
+# }
+
+
+## monthly climatology: average over each month across all years in period
+
+climatology <- lapply(monthly, apply, c(1:3,5), mean)
+
+# ## quick check:
+# dev.new()
+# par(mfrow=c(3,4))
+# for(m in month.abb) image(climatology$obs["T700",,,m], main=m)
+
+
+## monthly anomaly: monthly average minus (monthly) climatology
+
+monanom <- list()
+for(p in periods){
+    monanom[[p]] <- sweep(monthly[[p]], c(1:3,5), climatology[[p]])
+}
+
+
+# ## quick check:
+# dev.new()
+# par(mfrow=c(3,3))
+# for(i in 1:8){
+#     v=vars[i]; y=peryear$hist[i]; m=month.abb[i]
+#     image(monanom$hist[v,,,y,m], main=paste(v,y,m))
+# }
+
+
+
+## avanom: monthly anomaly averaged across years
+
+avanom <- lapply(monanom, apply, c(1:3,5), mean)
+
+dev.new()
+par(mfrow=c(3,4))
+for(m in month.abb) image(avanom$rcp85["T700",,,m])
+
+
+# ## quick check: for all bucket, this is near zero:
+# range(unlist(avanom))
+
+rm(avanom)
+
+
+### Now by bucket
+
+stop()
+
 
 #mua <- ua[[p]][,,,,m,]
 ## subset to month, wrap YMD to single dimension, fix dimnames
