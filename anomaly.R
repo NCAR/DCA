@@ -130,9 +130,78 @@ for(m in month.abb) image(avanom$rcp85["T700",,,m])
 rm(avanom)
 
 
+## save data to file & cleanup
+
+
 ### Now by bucket
 
-stop()
+for(p in periods){
+    for(x in px){
+        for(y in py){
+            ## subset bucket dataframe for p / x / y 
+            with(bprec[[p]], xyind <<- px==x & py == y)
+            df.pxy <- bprec[[p]][xyind,]            
+            for(meth in methods){                
+                for(b in buckets){
+
+                    mbind <- df.pxy[[meth]] == b
+                    bdays <- df.pxy[mbind, 1:4]
+
+                    ## subset ua array to bucket days for method(p,x,y)
+                    uab <- ua[[p]][,,,mbind]
+                    
+                    
+                    ## baseline: average over all time in period 
+                    baseline <- apply(uab, 1:3, mean)
+
+                    ## monthly[12*N]: average over each month
+
+                    ## PAUSE.  For wet bucket, many months have single
+                    ## digit days going into them, often zero.  We
+                    ## don't want to give a 1-day month equal weight
+                    ## with a 12-day month when calculating the
+                    ## multi-year average.
+
+                    ## My monthly climatology should be the average of
+                    ## all days in this month across multiple years --
+                    ## not average of all months.
+
+                    ## And then the anomaly of interest is the
+                    ## difference between bucket climatology and all climatology.
+
+                    ## (Which is the same as the difference between
+                    ## both of those with the baseline subtracted off,
+                    ## since addition is commutative.)
+
+
+                    ## so what I really want is:
+
+                    ## baseline (average over all time)  <- invariant by bucket, method
+
+                    ## monthly climatology by bucket+all
+                    ## (average in month & bucket across years)
+
+                    ## anomaly: climatology - baseline (for each bucket+all)
+
+                    ## delta: bucket anomaly - all anomaly
+
+                    ## and I can stick this all into a function, right?
+
+
+                    
+                    
+                    ## climatology[12]: average monthly across N years
+                    ## monanom[12*N]: monthly minus climatology
+                    ## avanom[12]: average monthly anomaly across N years
+                
+            }
+        }
+    }
+}
+
+
+
+
 
 
 #mua <- ua[[p]][,,,,m,]
