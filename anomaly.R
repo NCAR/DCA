@@ -5,135 +5,106 @@ load("data/misc.Rdata")
 load("data/buckets.Rdata")
 source("names.R")
 
-## We have 3 buckets (dry/moist/wet), plus "all" (no bucket)
-## For each bucket, we calculate:
-## baseline[1]: average over all time in period
-## monthly[12*N]: average over each month
-## climatology[12]: average monthly across N years
-## monanom[12*N]: monthly minus climatology
-## avanom[12]: average monthly anomaly across N years
+## What gets calculated:
 
-## And we calculate that for each of 9 methods & 20 locations
+## baseline: the overall average (average over all time in period).
+## There's only one baseline; it doesn't vary by bucket or method.
 
-## We aren't interested in individual months, so we only keep
-## baseline, climatology, and (monthly average) anomaly.  Note also
-## that baseline is the same for everything (no per-bucket baseline),
-## so we only calculate that once.
+## climatology: per month & bucket (dry/moist/wet) + total (no bucket)
+## average across years of all days in that month and bucket.  There's
+## only one total climatology, but for the buckets, there's one per
+## method and location.
 
-## That gives us 2 (clim+anom) * 4 (buckets) * 12 (months) * 9
-## (methods) * 20 (locations) * 3 periods) = 51k slices of 8
-## variables.  Which is a lot (equivalent to 142 years of data), so
-## I'm not going to calculate them all at once or all in one place.
-## Calculate per location and month and save in separate files.
+## anomaly: climatology minus baseline
 
+## delta: bucket anomaly minus total anomaly.  
 
-rseq <- function(rng){seq(from=min(rng), to=max(rng))}
+## N = 9 methods * 4 py * 5 px = 180
 
-## lists of years in each period
-peryear <- lapply(perspan,  function(s){
-    strsplit(s, '-') |> unlist() |> as.numeric() |> rseq() |> as.character()
-})
+## Data size:
+## baseline[1], clim[12*3*N+12], anomaly = clim, delta=[12*3*N]
+## = 19k slices ~= 53 years of data for 8 variables.
 
-nyr <- length(peryear[[1]])
-stopifnot(all(sapply(peryear, length) == nyr))
+## Which is a lot if you don't need it all at once, so I'm going to
+## save data in separate files by month and location.
 
 
-## The "all" bucket, which is the same across locations
 
 ## baseline climatology: average over all time in period
+## takes about a minute to run
 
-baseline <- lapply(ua, apply, 1:3, mean, na.rm=TRUE)
-
+# system.time(
+    baseline <- lapply(ua, apply, 1:3, mean, na.rm=TRUE)
+# )
 
 # ## quick check:
 # dev.new()
 # par(mfrow=c(3,3))
 # for(v in vars) image(baseline$hist[v,,], main=v)
+# mtext("baseline", outer=TRUE, side=3, line=-1.5)
+
+
 
 ## var-lon-lat dimensions, used for later steps
 cdim <- dim(baseline[[1]])
 cdnm <- dimnames(baseline[[1]])
 
+## empty var-lat-lon-mon array for holding results
+mdim <- c(cdim, 12)
+mdnm <- c(cdnm, list(month=month.abb))
+marr <- array(dim=mdim, dimnames=mdnm)
 
-## average over each month
-monthly <- list()
+## for indexing
+dates <- lapply(ua, dimnames) |> lapply(`[[`, "date")
 
+
+## monthly total climatology: average over all days in each month and
+## across all years in period; takes about a minute
+
+totclim <- list()
+
+#system.time(
 for(p in periods){
-    cat("-----\n",p,'\n')
-    mdim <- c(cdim, nyr, 12)
-    mdnm <- c(cdnm, list(year=peryear[[p]], month=month.abb))
-    monthly[[p]] <- array(dim=mdim, dimnames=mdnm)
-
-    dd <- dimnames(ua[[p]])$date
-
-    for(y in peryear[[p]]){
-        cat(y,'')
-        for(m in month.abb){
-            cat(m,'')
-            ym <- paste0(y, "-", m)
-            ymdex <- grep(ym, dd)
-            monthly[[p]][,,,y,m] <- apply(ua[[p]][,,,ymdex], 1:3, mean)
-        }
-        cat("\n")
+    totclim[[p]] <- marr
+    for(m in month.abb){
+        mind <- grep(m, dates[[p]])
+        totclim[[p]][,,,m] <- apply(ua[[p]][,,,mind], 1:3, mean, na.rm=TRUE)
     }
 }
-
-# ## quick check:
-# dev.new()
-# par(mfrow=c(3,3))
-# for(i in 1:8){
-#     v=vars[i]; y=peryear$rcp85[i]; m=month.abb[i]
-#     image(monthly$rcp85[v,,,y,m], main=paste(v,y,m))
-# }
-
-
-## monthly climatology: average over each month across all years in period
-
-climatology <- lapply(monthly, apply, c(1:3,5), mean)
+#)
 
 # ## quick check:
 # dev.new()
 # par(mfrow=c(3,4))
-# for(m in month.abb) image(climatology$obs["T700",,,m], main=m)
+# for(m in month.abb) image(totclim$obs["T700",,,m], main=m)
+# mtext("obs T700 monthly climatology", outer=TRUE, side=3, line=-1.5)
 
 
-## monthly anomaly: monthly average minus (monthly) climatology
 
-monanom <- list()
+## total monthly anomaly: monthly total climatology minus baseline
+
+totanom <- list()
 for(p in periods){
-    monanom[[p]] <- sweep(monthly[[p]], c(1:3,5), climatology[[p]])
+    totanom[[p]] <- sweep(totclim[[p]], 1:3, baseline[[p]])
 }
-
 
 # ## quick check:
 # dev.new()
 # par(mfrow=c(3,3))
 # for(i in 1:8){
-#     v=vars[i]; y=peryear$hist[i]; m=month.abb[i]
-#     image(monanom$hist[v,,,y,m], main=paste(v,y,m))
+#     v=vars[i]; m=month.abb[i]
+#     image(totanom$hist[v,,,m], main=paste(v,m))
 # }
+# mtext("hist total anomaly", outer=TRUE, side=3, line=-1.5)
 
-
-
-## avanom: monthly anomaly averaged across years
-
-avanom <- lapply(monanom, apply, c(1:3,5), mean)
-
-dev.new()
-par(mfrow=c(3,4))
-for(m in month.abb) image(avanom$rcp85["T700",,,m])
-
-
-# ## quick check: for all bucket, this is near zero:
-# range(unlist(avanom))
-
-rm(avanom)
 
 
 ## save data to file & cleanup
 
+## ! TODO^^^
 
-### Now by bucket
+
+### Now calculate bucket climatology & anomalies
 
 for(p in periods){
     for(x in px){
@@ -143,56 +114,16 @@ for(p in periods){
             df.pxy <- bprec[[p]][xyind,]            
             for(meth in methods){                
                 for(b in buckets){
-
-                    mbind <- df.pxy[[meth]] == b
-                    bdays <- df.pxy[mbind, 1:4]
+                    for(mon in month.abb){
+# HERE
+                    }
+#                    mbind <- df.pxy[[meth]] == b
+#                    bdays <- df.pxy[mbind, 1:4]
 
                     ## subset ua array to bucket days for method(p,x,y)
-                    uab <- ua[[p]][,,,mbind]
+#                    uab <- ua[[p]][,,,mbind]
                     
                     
-                    ## baseline: average over all time in period 
-                    baseline <- apply(uab, 1:3, mean)
-
-                    ## monthly[12*N]: average over each month
-
-                    ## PAUSE.  For wet bucket, many months have single
-                    ## digit days going into them, often zero.  We
-                    ## don't want to give a 1-day month equal weight
-                    ## with a 12-day month when calculating the
-                    ## multi-year average.
-
-                    ## My monthly climatology should be the average of
-                    ## all days in this month across multiple years --
-                    ## not average of all months.
-
-                    ## And then the anomaly of interest is the
-                    ## difference between bucket climatology and all climatology.
-
-                    ## (Which is the same as the difference between
-                    ## both of those with the baseline subtracted off,
-                    ## since addition is commutative.)
-
-
-                    ## so what I really want is:
-
-                    ## baseline (average over all time)  <- invariant by bucket, method
-
-                    ## monthly climatology by bucket+all
-                    ## (average in month & bucket across years)
-
-                    ## anomaly: climatology - baseline (for each bucket+all)
-
-                    ## delta: bucket anomaly - all anomaly
-
-                    ## and I can stick this all into a function, right?
-
-
-                    
-                    
-                    ## climatology[12]: average monthly across N years
-                    ## monanom[12*N]: monthly minus climatology
-                    ## avanom[12]: average monthly anomaly across N years
                 
             }
         }
