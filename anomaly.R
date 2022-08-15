@@ -1,9 +1,11 @@
 ## Calculate climatology and anomalies by method, month, and bucket
 
+print(date())
 load("data/ua.Rdata")
 load("data/misc.Rdata")
 load("data/buckets.Rdata")
 source("names.R")
+print(date())
 
 ## What gets calculated:
 
@@ -33,9 +35,10 @@ source("names.R")
 ## baseline climatology: average over all time in period
 ## takes about a minute to run
 
-# system.time(
-    baseline <- lapply(ua, apply, 1:3, mean, na.rm=TRUE)
-# )
+#system.time(
+baseline <- lapply(ua, apply, 1:3, mean, na.rm=TRUE)
+#)
+print(date())
 
 # ## quick check:
 # dev.new()
@@ -73,6 +76,7 @@ for(p in periods){
     }
 }
 #)
+print(date())
 
 # ## quick check:
 # dev.new()
@@ -106,8 +110,16 @@ outdir <- paste("data", gcm, "anom", sep='/')
 system(paste("mkdir -p", outdir))
 
 save(baseline, totclim, totanom, file=paste0(outdir,"/total.Rdata"))
+print(date())
+
+
+## some methods have missing data, which gives NA values in the subset indices
+dropna <- function(x){x[!is.na(x)]}
 
 ### Now calculate bucket climatology & anomalies
+
+## Takes 2-3 minutes per loop for hist/rcp85 (obs is of course faster)
+## Ran start to finish in a little under 2 hours (with no other tasks on the machine.)
 
 for(p in periods){
     cat('--------',p,'\n')
@@ -129,8 +141,8 @@ for(p in periods){
                 
                 for(meth in methods){
                     for(b in buckets){
-                        mbdates <- subdf$date[subdf[[meth]]==b]
-                        subua <- ua[[p]][,,,mbdates]
+                        mbdates <- subdf$date[subdf[[meth]]==b] |> dropna()
+                        subua <- ua[[p]][,,,mbdates[!is.na(mbdates)]]
 
                         id <- paste(meth, b, sep='.')
                         
@@ -155,7 +167,9 @@ for(p in periods){
                      file=paste0(savedir, '/', filename))
             }
             cat("\n")
+            print(date())
         }
     }
 }
 
+print(date())
