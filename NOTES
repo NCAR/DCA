@@ -32,16 +32,7 @@ ua$period[var,lon,lat,day,month,year]
 vars[]
 
 
- 2) clim.R generates:
-
-data/clim.Rdata				# climatology/anomaly decompos'n
-
-## PAUSE - refactor data planned
-#clim$period$clim[var,lon,lat]
-#	    seas[var,lon,lat,month]
-#	    anom[var,lon,lat,day,month,year]
-
-3) bucket.R: 
+2) bucket.R: 
 
 data/buckets.Rdata			# precip aggregated by amount
 
@@ -50,6 +41,24 @@ bprec$period[method,px,py,day,month,year]	# bucketized precip
 bstat${count|pct}$period[bucket,method,px,py,month]
 theta						# 3 mm threshold
 trace						# 0.254 mm = 1/100" threshold
+
+
+3) anomaly.R generates:
+
+data/$gcm/anom/total.Rdata			# climatology/anomaly decompos'n
+
+baseline$period[var, px, py]			# average over all time
+totanom$period[var, px, py, month]		# climatology minus baseline
+totclim$period[var, px, py, month]		# avg over month across years
+
+data/$gcm/anom/sgp/$x.$y/$period.$month.$x.$y.Rdata
+anom[bucket,method,var,lon,lat]		# clim minus baseline
+clim[bucket,method,var,lon,lat]		# avg over month & bucket across years
+delta[bucket,method,var,lon,lat]	# anom minus totanom
+gcm
+loc
+mon
+period
 
 
 -------------
