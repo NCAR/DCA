@@ -53,10 +53,16 @@ tdim <- dim(baseline[[1]])
 tdnm <- dimnames(baseline[[1]])
 tarr <- array(dim=tdim, dimnames=tdnm)
 
-## empty var-lat-lon-mon array for holding monthly data
+## empty var-lat-lon-mon array for monthly data
 mdim <- c(tdim, 12)
 mdnm <- c(tdnm, list(month=month.abb))
 marr <- array(dim=mdim, dimnames=mdnm)
+
+## empty bucket-method-var-lat-lon array for clim/anom/delta data
+bdim <- c(length(buckets), length(methods), tdim)
+bdnm <- c(list(bucket=buckets, method=methods), tdnm)
+barr <- array(dim=bdim, dimnames=bdnm)
+
 
 ## for indexing
 dates <- lapply(ua, dimnames) |> lapply(`[[`, "date")
@@ -137,26 +143,19 @@ for(p in periods){
                 subdf <- bprec[[p]][sind,]            
 
                 ## storage for calculated results
-                climdata <- anomdata <- deltadata <- list()
+                clim <- anom <- delta <- barr
                 
                 for(meth in methods){
                     for(b in buckets){
                         mbdates <- subdf$date[subdf[[meth]]==b] |> dropna()
                         subua <- ua[[p]][,,,mbdates[!is.na(mbdates)]]
 
-                        id <- paste(meth, b, sep='.')
-                        
-                        climdata[[id]]  <- apply(subua, 1:3, mean)
-                        anomdata[[id]]  <- climdata[[id]] - baseline[[p]]
-                        deltadata[[id]] <- anomdata[[id]] - totanom[[p]][,,,m]
+                        ## barr[bucket, method, var, lat, lon]
+                        clim[b,meth,,,]  <- apply(subua, 1:3, mean)
+                        anom[b,meth,,,]  <- clim[b,meth,,,] - baseline[[p]]
+                        delta[b,meth,,,] <- anom[b,meth,,,] - totanom[[p]][,,,mon]
                     }
                 }
-                
-                ## create output dataframes with array column for bucket values
-                clim <- anom <- delta <- expand.grid(method=methods, bucket=buckets)
-                clim$ua  <- climdata
-                anom$ua  <- anomdata
-                delta$ua <- deltadata
                 
                 ## save data
                 savedir <- paste(outdir, "sgp", loc, sep='/')
