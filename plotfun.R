@@ -109,6 +109,8 @@ distplots <- function(x, y, xylim=narange(x,y),
 ## @param units: a named vector of units for each variable, used to
 ## annotate colormaps.
 
+## @param main: main title
+
 ## @param dbs: a list of geographical databases (e.g., "state" for US
 ## states) to be overlaid using map().  Overlays are skipped if this
 ## argument is NULL.  Defaults to North America (US states + Canada &
@@ -119,55 +121,72 @@ distplots <- function(x, y, xylim=narange(x,y),
 
 ## @param mapcol: color for map overlay lines
 
-## @param lwd: line width for map overlay
+## @param maplwd: line width for map overlay
 
-## @param main: main title
+## @param spacing: spacing between gridded map panels, in inches.
 
-## @param params: a list of named arguments to pass to par().  Don't
-## use mfrow or mfg, which are computed internally.  mar determines
-## spacing between individual panels; spacing for annotations and axes
-## are accommodated by oma, which also includes extra space at the
-## bottom for colorbars.
+## @param cbhi: adjustment to height of the colorbar, in inches.
 
-## @param cbarmar: margins for colorbars at the bottom
+## @param margi: combined margins for the composite plot, in inches.
+## A numerical vector of the form c(gridmap.bottom, left, gridmap.top,
+## right, colorbar.bottom, colorbar.top).  These margins should
+## include space for annotations and axes.
+
+## @param uniti: amount of space (in inches) to leave for the units
+## string to the left of each colorbar
 
 ## @param ...: other arguments passed to image()
+
+## Note: don't use parameters oma, omi, mar, mai, mfrow, or mfcol;
+## these are used internally to create the plot and will be ignored /
+## overwritten.
 
 gridmap <- function(x, y, z, cmaps=NULL, zlims=NULL,
                     units=NULL, main=NULL,
                     dbs=list("state","world"),
                     regs=list(".", c("Can","Mex")),
-                    mapcol='darkgray', lwd=1/2,
-                    params=list(oma=c(5,2,4,2),
-                        mar=c(1,1,1,1)/4,
-                        mgp=c(3,1/2,0)),
-                    cbarmar=c(2,2,1,1), ...)  {
+                    mapcol='darkgray', maplwd=1/2,
+                    spacing=c(1,1,1,1)/20, cbhi=0,
+                    margi=c(2,3,5,3,2,2)/8, uniti=1/8,
+                    ...){
+
 
     mods <- dimnames(z)[[1]]
     vars <- dimnames(z)[[2]]
     nm <- length(mods)
     nv <- length(vars)
 
-    params$mfrow <- c(nm, nv)
-    do.call(par, params)
+    cbary <- sum(cbhi, margi[5:6])
+    
+    gridomi <- c(margi[1]+cbary, margi[2:4])
+    cbaromi <- c(margi[5], margi[2], par()$din[2]-cbary, margi[4])
+
+    mfrow <- c(nm, nv)
+
+    par(mfrow=mfrow, omi=gridomi, mai=spacing)
+    
+    if(missing(zlims)){
+        zlims <- apply(z, 2, range) |> as.data.frame() |> as.list()
+    }
     
     for(m in mods){
         for(v in vars){
             image(lon, lat, z[m,v,,], zlim=zlims[[v]], col=cmaps[[v]],
-                  xaxt='n', yaxt='n', ann=FALSE)
+                  xaxt='n', yaxt='n', ann=FALSE, ...)
             if(m==mods[1]) title(v, line=1, cex=2, xpd=NA)
             if(m==mods[nm]) axis(1)
             if(v==vars[nv]) axis(4)
-            mapply(map, dbs, regs, MoreArgs=list(add=TRUE, lwd=lwd, col=mapcol))
+            mapply(map, dbs, regs, MoreArgs=list(add=TRUE, lwd=maplwd, col=mapcol))
         }
     }
     mtext(mods, side=2, outer=TRUE, line=0.5, at=(nm:1 - 1/2)/nm)
     mtext(main, side=3, line=2, outer=TRUE)
-
+    
     ## colorbars
-    par(new=TRUE, oma=c(0, params$oma[-1]), mar=c(2,2,1,1),
-        mgp=c(3,1/2,0), mfrow=c(nm*2, nv), mfg=c(nm*2,1))
-
+    
+    par(new=TRUE, omi=cbaromi, mai=c(0,1,0,1)*uniti + spacing,
+        mfrow=c(1,nv), mfg=c(1,1))
+    
     for(v in vars){
         cbmap <- cmaps[[v]]
         N <- length(cbmap)
@@ -176,5 +195,5 @@ gridmap <- function(x, y, z, cmaps=NULL, zlims=NULL,
         
         image(x=cbx, z=cbz, col=cbmap, yaxt='n')
         mtext(units[v], side=2, las=2, cex=0.7, line=1/4)
-    }    
+    }
 }

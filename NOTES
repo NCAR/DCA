@@ -71,8 +71,9 @@ A) barplots.R				# barplots of bucket stats
 date
 R -f ingest.R
 date
-R -f clim.R
-
+R -f bucket.R
+date
+R -f anomaly.R
 
 
 -------------
@@ -83,7 +84,6 @@ TODO
 # plotfun commentary
 
 # move .Rdata files into data
-X script.R generates data/script.Rdata?
 
 # bucketize precip
 # bucket plots:
@@ -94,7 +94,7 @@ X script.R generates data/script.Rdata?
 
 .gangplot: layout + function + f'n args
 
-calculate anomaly by bucket
+# calculate anomaly by bucket
 gridmaps: may climatology (baseline + bucketized)
 gridmaps: may anomaly (baseline + bucketized)
 layout A & B: plot = bucket, row = method & vice-versa
@@ -109,9 +109,9 @@ CSTools - multivariate EOF
 	edit ingest to use R.utils?
 
 
-instp precip plots w/ calendar layout?
-
 precip distplots: all, month
+
+instp precip plots w/ calendar layout?
 
 
 taylor diagrams: anomaly (current and future)
@@ -140,6 +140,13 @@ run over all CONUS gridcells?
 
 
 get util.R .checkargs() to work
+
+
+other regions:
+      Yakima river basin
+      Tuolumnee river basin
+      Upper CO r.b. @ Cameo CO
+      Phoenix
 
 -------------------
 
