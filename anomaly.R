@@ -124,11 +124,13 @@ dropna <- function(x){x[!is.na(x)]}
 
 ### Now calculate bucket climatology & anomalies
 
-## Takes 2-3 minutes per loop for hist/rcp85 (obs is of course faster)
+## Takes 2-3 minutes per loop
 ## Ran start to finish in a little under 2 hours
 ## (with no other tasks on the machine.)
 
-for(p in periods){
+## skip obs b/c no ua data for it
+
+for(p in setdiff(periods, "obs")){
     cat('--------',p,'\n')
     period = p                                                      ## for save file
     for(x in px){
