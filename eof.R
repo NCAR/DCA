@@ -1,8 +1,7 @@
-
 load("data/ua.Rdata")
 #load("data/misc.Rdata")
 #load("data/buckets.Rdata")
-#source("names.R")
+source("names.R")
 
 
 ## PCA doesn't care about the spatial dimension of the data; you give
@@ -18,15 +17,81 @@ load("data/ua.Rdata")
 ## (nv,nx,ny,nt) to (nv*nx*ny, nt), and vice-versa to get it back.
 
 
-hist <- ua$hist
+## Running PCA on an entire 30-year 8-dim data slab takes a couple hours.
 
-uadim <- dim(hist)
+#hist <- ua$hist
+
+dates <- dimnames(ua$hist)$date
+
+## run PCA by month
+
+#for(m in month.abb){
+m <- "May"
+p <- "hist"
+
+uamon <- ua[[p]][,,,grep(m, dates)]
+
+
+## dimensions for reshaping the array -- we can convert foo[v,x,y,t]
+## to bar[vxy,t] by just changing dim(foo).
+
+uadim <- dim(uamon)
 nd <- length(uadim)
 
 nt <- uadim[nd]
 nvxy <- prod(uadim[-nd])
 
-dim(hist) <- c(nvxy, nt)
+
+## standardize each variable
+
+mu <- apply(uamon, 1, mean)
+sigma <- apply(uamon, 1, sd)
+
+
+zmon <- sweep(uamon, "var", mu, '-') |> sweep("var", sigma, '/')
+
+dim(zmon) <- c(nvxy, nt)
+dimnames(zmon)<-list(z=NULL, t=NULL)
+
+
+
+## run PCA - only takes ~75 seconds per month (on monthly data)
+
+system.time(
+    pca <- prcomp(zbar, scale=FALSE, center=FALSE)
+    )
+
+
+## scree plot
+
+plot(pca$sd)
+plot(pca$sd, log='xy')
+
+
+## for the moment, let's keep the top 12 components (those with
+## eigenvalues greater than 3).  In actuality, looking at the log-log
+## plot, I think it's got 1/x-ish scaling from around component 20 to
+## component 100 or 150, so we should probably be keeping the first 20
+## or so.  Values above 2 gives us the first 25 components, so maybe
+## that's good.
+
+eof <- array(pca$x, dim=dim(uamon),
+             dimnames=c(dimnames(uamon)[-nd], list(pc=NULL)))[,,,1:12]
+
+stop()
+
+source("plotfun.R")
+
+gridmap(lon, lat, eof)
+
+
+## rotate components to spread out variance
+
+
+
+#}
+
+
 
 #for(N in 2^(2:14)){
 #    cat("\n",N,'\t')
