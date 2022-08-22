@@ -44,6 +44,9 @@ pstat$pmed <- apply(psorted, 2, median, na.rm=TRUE)
 pstat$pbar <- apply(psorted, 2, mean, na.rm=TRUE)
 pstat$rain <- apply(psorted, 2, function(x){1-sum(is.na(x))/nxy})
 
+theta <- function(x, th=log10(3)){ sum(x > th, na.rm=TRUE)/length(x)}
+pstat$over3 <- apply(psorted, 2, theta)
+
 fix <- function(x){x[!is.finite(x)] <- NA; x}
 
 pstat <- lapply(pstat, fix)
