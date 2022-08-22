@@ -1,4 +1,5 @@
 library(maps)
+source("util.R")
 
 ## plot that uses symmetric ranges for both axes
 symplot <- function(xylim=narange(x, y), ...){
@@ -141,7 +142,8 @@ distplots <- function(x, y, xylim=narange(x,y),
 ## these are used internally to create the plot and will be ignored /
 ## overwritten.
 
-gridmap <- function(x, y, z, cmaps=NULL, zlims=NULL,
+gridmap <- function(x, y, z,
+                    cmaps=NULL, zlims=NULL,
                     units=NULL, main=NULL,
                     dbs=list("state","world"),
                     regs=list(".", c("Can","Mex")),
@@ -150,24 +152,47 @@ gridmap <- function(x, y, z, cmaps=NULL, zlims=NULL,
                     margi=c(2,3,5,3,2,2)/8, uniti=1/8,
                     ...){
 
-
     mods <- dimnames(z)[[1]]
     vars <- dimnames(z)[[2]]
     nm <- length(mods)
     nv <- length(vars)
 
+
+    ## fill out missing defaults
+
+    ## default: by column
+    if(missing(zlims)){
+        zlims <- apply(z, 2, narange) |> as.data.frame() |> as.list()
+    }
+
+    ## if single range given, reuse for all vars
+    if(!is.list(zlims)){
+        zlims <- rep(list(zlims), nm) |> setname(vars)
+    }
+
+    ## if no cmap given, use rwb palette
+        if(missing(cmaps)){
+            cmaps <- colorRampPalette(c("red","white","blue"))(256)
+        }
+
+    ## if single cmap given, reuse for all vars
+    if(!is.list(cmaps)){
+        cmaps <- rep(list(cmaps), nm) |> setname(vars)
+    }
+
+
+    ## margin calculations for colorbar space
+    
     cbary <- sum(cbhi, margi[5:6])
     
     gridomi <- c(margi[1]+cbary, margi[2:4])
     cbaromi <- c(margi[5], margi[2], par()$din[2]-cbary, margi[4])
 
-    mfrow <- c(nm, nv)
-
-    par(mfrow=mfrow, omi=gridomi, mai=spacing)
     
-    if(missing(zlims)){
-        zlims <- apply(z, 2, range) |> as.data.frame() |> as.list()
-    }
+    ## plotting
+    
+    mfrow <- c(nm, nv)
+    par(mfrow=mfrow, omi=gridomi, mai=spacing)
     
     for(m in mods){
         for(v in vars){
