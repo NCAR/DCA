@@ -27,8 +27,8 @@ lat[]
 lon[]
 periods[]
 perspan[]
+ua$period[var,lon,lat,date]		# date dim named YYYY-Mon-DD
 uaunits
-ua$period[var,lon,lat,day,month,year]
 vars[]
 
 
@@ -36,14 +36,16 @@ vars[]
 
 data/buckets.Rdata			# precip aggregated by amount
 
-buckets						# dry / moist / wet
-bprec$period[method,px,py,day,month,year]	# bucketized precip
-bstat${count|pct}$period[bucket,method,px,py,month]
-theta						# 3 mm threshold
-trace						# 0.254 mm = 1/100" threshold
+buckets					# dry / moist / wet
+bprec$period[[]]			# dataframe of bucketized precip
+	columns: date, year, month, day, period, px, py, <methods>
+bstat${count|pct}$period[[]]		# dataframe of bucket stats
+	columns: period, month, px, py, bucket, <methods>			
+theta					# 3 mm threshold
+trace					# 0.254 mm = 1/100" threshold
 
 
-3) anomaly.R generates:
+3) anomaly.R:
 
 data/$gcm/anom/total.Rdata			# climatology/anomaly decompos'n
 
@@ -95,7 +97,7 @@ TODO
 .gangplot: layout + function + f'n args
 
 # calculate anomaly by bucket
-gridmaps: may climatology (baseline + bucketized)
+# gridmaps: may climatology (baseline + bucketized)
 gridmaps: may anomaly (baseline + bucketized)
 layout A & B: plot = bucket, row = method & vice-versa
 all x o,c,f
@@ -105,8 +107,6 @@ PCA on daily may anomalies
 varimax rotation on modes
 x metR package?  (rotate=TRUE for varimax...)
 CSTools - multivariate EOF
-	need to merge YMD using R.utils::(un?)wrap()
-	edit ingest to use R.utils?
 
 
 precip distplots: all, month
