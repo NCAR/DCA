@@ -64,7 +64,7 @@ narange <- function(...){range(..., na.rm=TRUE)}
 
 
 ## symmetric range around zero
-srange <- function(...){c(-1,1)*max(narange(...))}
+srange <- function(...){c(-1,1)*max(abs(narange(...)))}
 
 
 ## transpose row/column for list of vectors
