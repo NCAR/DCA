@@ -197,3 +197,33 @@ gridmap <- function(x, y, z, cmaps=NULL, zlims=NULL,
         mtext(units[v], side=2, las=2, cex=0.7, line=1/4)
     }
 }
+
+
+
+#######  Moisture advection plot experimentation
+
+# 
+# foo <- data$total$baseline$obs
+# 
+# vscale <- mean(c(diff(lon),diff(lat))) / max(abs(range(foo[c("U850","V850"),,])))
+# 
+# nx <- length(lon)
+# ny <- length(lat)
+# lon2d <- rep(lon, each=ny)
+# lat2d <- rep(lat, nx)
+# 
+# u <- foo["U850",,]
+# v <- foo["V850",,]
+# q <- foo["Q850",,]
+# z <- foo["Z700",,]
+# 
+# 
+# dev.new(width=12, height=7)
+# 
+# image(lon, lat, foo["Q850",,], col=climap[["Q850"]], ylim=yr, xlim=xr)
+# map("state", add=TRUE, col='yellow')
+# map("world", c("can","mex"), add=TRUE, col='yellow')
+# contour(lon, lat, z, add=TRUE, lwd=2, labcex=1)
+# arrows(lon2d, lat2d, lon2d+vscale*u, lat2d+vscale*v, length=0.02, lwd=2)
+# 
+## would need to subset data to xlim/ylim region to get contour labels at edges
