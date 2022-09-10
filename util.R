@@ -67,6 +67,12 @@ narange <- function(...){range(..., na.rm=TRUE)}
 srange <- function(...){c(-1,1)*max(abs(narange(...)))}
 
 
+## which values fall between the bounds?
+`%within%` <- function(x, bounds){
+    x <= max(bounds) & x >= min(bounds)
+}
+
+
 ## transpose row/column for list of vectors
 ## (i.e., get list by fields of strsplit output...)
 

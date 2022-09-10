@@ -8,9 +8,10 @@ source("plotfun.R")
 source("names.R")
 
 ## plotting limits
-xr <- c(-150,-50)
-yr <- c(15,65)
-
+#xr <- c(-150,-50)
+#yr <- c(15,65)
+xr <- c(-135,-55)
+yr <- c(20,60)
 
 ## load data into a list instead of the global environment
 listload <- function(filepath){
@@ -49,6 +50,20 @@ dev.new(width=12, height=4)
 gridmap(lon, lat, abind(total$baseline[ocf], along=0), mapcol='black',
         cmaps=climap, units=uaunits, xlim=xr, ylim=yr,
         main="Baseline upper atmosphere climatology")
+
+
+
+## May moisture advection plot
+
+dev.new(width=7, height=11)
+par(mfrow=c(3,1), oma=c(0,0,3,0), mar=c(5,5,5,3)/2, mgp=c(2,2/3,0))
+
+for(p in ocf){
+    advection(total$totclim[[p]][,,,"May"], main=p)
+}
+mtext("May moisture advection", side=3, outer=TRUE)
+## TODO: colorbar, common ranges
+
 
 
 ## bucketized climatology

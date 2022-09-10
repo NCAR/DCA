@@ -66,7 +66,9 @@ period
 -------------
 A) barplots.R				# barplots of bucket stats
 
+B) gridmaps.R				# gridmaps of UA anomalies
 
+C) eof.R				# PCA of UA
 
 -------------
 
@@ -80,6 +82,10 @@ R -f anomaly.R
 
 -------------
 TODO
+
+# set lat/lon bounds:
+#    lat 20:60
+#    lon -135:-55
 
 # github repo
 
@@ -103,10 +109,9 @@ layout A & B: plot = bucket, row = method & vice-versa
 all x o,c,f
 
 
-PCA on daily may anomalies
+# PCA on daily may anomalies
 varimax rotation on modes
-x metR package?  (rotate=TRUE for varimax...)
-CSTools - multivariate EOF
+
 
 
 precip distplots: all, month
