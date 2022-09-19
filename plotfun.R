@@ -227,15 +227,17 @@ gridmap <- function(x, y, z,
 
 #######  Moisture advection plot
 
-## quvz: array[var,lon,lat], with dimvars
+## image plot Q * windspeed with wind arrows overlaid
+## quv: array[var,lon,lat] of Q, U, & V, with dimvars
 
-## TODO: separate variables (so we can use z anomaly)
 ## TODO: add lots of parameters as gridmap above
-## TODO: autoextract lat & lon from dimvars?
-## TODO: better variable naming
+## TODO: add colorbar
 
-advection <- function(quvz, xr=c(-135,-55), yr=c(20,60), main=NULL){
-
+advection <- function(quv, xr=c(-135,-55), yr=c(20,60), main=NULL,
+                      lon=as.numeric(dimnames(quv)$lon),
+                      lat=as.numeric(dimnames(quv)$lat)
+                      ){    
+    
     ## need to subset data to range to get contour labels at edge of plot
 
     ix <- lon %within% xr
@@ -244,10 +246,10 @@ advection <- function(quvz, xr=c(-135,-55), yr=c(20,60), main=NULL){
     slon <- lon[ix]
     slat <- lat[iy]
 
-    foo <- quvz[,ix,iy]
+    sdata <- quv[,ix,iy]
 
     windscale <- mean(c(diff(slon),diff(slat))) /
-        max(abs(range(foo[c("U850","V850"),,])))
+        max(abs(range(sdata[c("U850","V850"),,])))
 
     nx <- length(slon)
     ny <- length(slat)
@@ -256,27 +258,23 @@ advection <- function(quvz, xr=c(-135,-55), yr=c(20,60), main=NULL){
     lat2d <- rep(slat, each=nx) |> matrix(nx, ny)
     ## note these look reversed if you print them b/c R is column-major
     
-    u <- foo["U850",,] * windscale
-    v <- foo["V850",,] * windscale
-    q <- foo["Q850",,]
-    z <- foo["Z700",,]
+    u <- sdata["U850",,] * windscale
+    v <- sdata["V850",,] * windscale
+    q <- sdata["Q850",,] * sqrt(u^2 + v^2)/windscale
     
 
 #    dev.new(width=12, height=7)
 
-    clev <- pretty(narange(z))
 
     image(slon, slat, q, col=climap[["Q850"]], ylim=yr, xlim=xr,
-          xlab="", ylab="", main=main)
+          xlab="", ylab="", main=main, zlim=c(0,max(q)))
 
-    ## double up on map lines so they're visible against cubehelix
-    
+    ## double up on map lines so they're visible against cubehelix    
     map("state", add=TRUE, col='yellow', lwd=2)
     map("state", add=TRUE, col='blue', lwd=1)
     
     map("world", c("can","mex"), add=TRUE, col='yellow', lwd=2)
     map("world", c("can","mex"), add=TRUE, col='blue', lwd=1)
 
-    contour(slon, slat, z, add=TRUE, level=clev, lwd=1, labcex=1, method='edge', col='red')
     arrows(lon2d, lat2d, lon2d+u, lat2d+v, length=0.02) #, lwd=2)
 }
