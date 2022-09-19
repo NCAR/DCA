@@ -270,7 +270,7 @@ advection <- function(quv, xr=c(-135,-55), yr=c(20,60),
                       lat=as.numeric(dimnames(quv)$lat),
                       cmap=climap[["Q850"]],
                       arrowcol="contrast",
-                      mapcol1="blue", mapcol2="yellow",
+                      halo=TRUE, mapcol=c("black","white"),
                       dbs=list("state","world"),
                       regs=list(".", c("Can","Mex")),
                       ...
@@ -305,13 +305,13 @@ advection <- function(quv, xr=c(-135,-55), yr=c(20,60),
 #    dev.new(width=12, height=7)
 
     image(slon, slat, q, col=cmap, ylim=yr, xlim=xr, zlim=zr,
-          xlab="", ylab="", main=main)
+          xlab="", ylab="")
 
-    ## double up on map lines so they're visible against cubehelix    
-    mapply(map, dbs, regs, MoreArgs=list(add=TRUE, lwd=2, col=mapcol2))
-    mapply(map, dbs, regs, MoreArgs=list(add=TRUE, lwd=1, col=mapcol1))
+    ## halo on map boundaries makes them show better
+    if(!halo){ mapcol[2] <-NA }
+    mapply(halomap, dbs, regs, col=mapcol[1], hcol=mapcol[2])
     
-    ## 
+
     if(arrowcol == "contrast"){
         amap <- bwcontrast(cmap)[q * 254/max(q)+1]
     } else {
@@ -320,6 +320,24 @@ advection <- function(quv, xr=c(-135,-55), yr=c(20,60),
     
     arrows(lon2d, lat2d, lon2d+u, lat2d+v, length=0.02, col=amap)
 }
+
+
+
+## Overloads maps::map().  Draws a map overlay with halo coloration
+## for better contrast against image/contour maps both light and dark
+## values.
+
+## @param lwd:  base linewidth
+## @param hlwd: linewidth for halo color
+## @param col:  color for map boundaries
+## @param hcol: color for halo around map boundaries.
+
+halomap <- function(..., lwd=1, hlwd=2*lwd,
+                    col="black", hcol="white", add=TRUE){
+    map(..., lwd=hlwd, col=hcol, add=add)
+    map(..., lwd=lwd, col=col, add=TRUE)
+}
+
 
 
 ## creates a colormap that is black where cmap is light and white
