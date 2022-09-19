@@ -285,20 +285,10 @@ advection <- function(quv, xr=c(-135,-55), yr=c(20,60),
     slat <- lat[iy]
 
     sdata <- quv[,ix,iy]
-
-    windscale <- mean(c(diff(slon),diff(slat))) /
-        max(abs(range(sdata[c("U850","V850"),,])))
-
-    nx <- length(slon)
-    ny <- length(slat)
     
-    lon2d <- rep(slon, ny)      |> matrix(nx, ny)
-    lat2d <- rep(slat, each=nx) |> matrix(nx, ny)
-    ## note these look reversed if you print them b/c R is column-major
-    
-    u <- sdata["U850",,] * windscale
-    v <- sdata["V850",,] * windscale
-    q <- sdata["Q850",,] * sqrt(u^2 + v^2)/windscale
+    u <- sdata["U850",,]
+    v <- sdata["V850",,]
+    q <- sdata["Q850",,] * sqrt(u^2 + v^2)
 
     zr <- c(0, max(q))
 
@@ -317,8 +307,8 @@ advection <- function(quv, xr=c(-135,-55), yr=c(20,60),
     } else {
         amap <- arrowcol
     }
-    
-    arrows(lon2d, lat2d, lon2d+u, lat2d+v, length=0.02, col=amap)
+
+    vectorfield(slon, slat, u, v, length=0.02, col=amap)    
 }
 
 
@@ -336,6 +326,33 @@ halomap <- function(..., lwd=1, hlwd=2*lwd,
                     col="black", hcol="white", add=TRUE){
     map(..., lwd=hlwd, col=hcol, add=add)
     map(..., lwd=lwd, col=col, add=TRUE)
+}
+
+
+## Overplot arrows scaled to fit resolution of array
+
+## @param x,y: 1-d vectors of x & y coordinates for data
+## @param u,v: 2-d arrays of u & v components of vector field data
+## @param ...: additional arguments to pass to arrows()
+
+## return: invisibly returns the scaling factor, in case you want to
+## use it in a legend or something.
+
+vectorfield <- function(x, y, u, v, ...){
+
+    nx <- length(x)
+    ny <- length(y)
+
+    ## note these look reversed if you print them b/c R is column-major
+    x2d <- rep(x, ny)      |> matrix(nx, ny)
+    y2d <- rep(y, each=nx) |> matrix(nx, ny)
+
+    wscale <- mean(c(diff(x), diff(y))) / max(abs(range(c(u,v))))
+    u2 <- u * wscale
+    v2 <- v * wscale
+    
+    arrows(x2d, y2d, x2d+u2, y2d+v2, ...)
+    invisible(wscale)
 }
 
 
