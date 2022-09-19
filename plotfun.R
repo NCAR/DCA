@@ -228,17 +228,55 @@ gridmap <- function(x, y, z,
 #######  Moisture advection plot
 
 ## image plot Q * windspeed with wind arrows overlaid
-## quv: array[var,lon,lat] of Q, U, & V, with dimvars
 
-## TODO: add lots of parameters as gridmap above
+## @param quv: array[var,lon,lat] of Q, U, & V, with dimvars
+
+## @param xr/yr: longitude/latitude range for plot
+
+## @param lon/lat: lon/lat values of data (xr needs not equal range(lon))
+
+## @param cmap: color map for humidity image component; default for
+## this analysis is cubehelix, which no single color will contrast
+## well with over the entire range, hence the fancy options for map
+## and arrow colors.
+
+## @param arrowcol: color for wind arrows.  Default is "contrast",
+## which uses the bwcontrast() function to make them black where the
+## background humidity image is light and white where it's dark.
+
+## @param mapcol2, mapcol2: two colors for draing map borders.  To get
+## good contrast against the default cubehelix colormap, borders are
+## drawn first using color2 with linewidth=2, then redrawn with
+## linewidth=1 in color2.  If color1 and color2 are blue and yellow,
+## respectively, you get what looks like a black line with a small
+## white halo, which shows up well against the background but doesn't
+## compete with arrows where they overlap.
+
+## @param dbs: a list of geographical databases (e.g., "state" for US
+## states) to be overlaid using map().  Overlays are skipped if this
+## argument is NULL.  Defaults to North America (US states + Canada &
+## Mexico).
+
+## @param regs: a list of regions to be overlaid for each database in
+## dbs.  Use '.' to get all regions in the database.
+
+## @param ...: further arguments passed to image()
+
 ## TODO: add colorbar
 
-advection <- function(quv, xr=c(-135,-55), yr=c(20,60), main=NULL,
+
+advection <- function(quv, xr=c(-135,-55), yr=c(20,60),
                       lon=as.numeric(dimnames(quv)$lon),
-                      lat=as.numeric(dimnames(quv)$lat)
+                      lat=as.numeric(dimnames(quv)$lat),
+                      cmap=climap[["Q850"]],
+                      arrowcol="contrast",
+                      mapcol1="blue", mapcol2="yellow",
+                      dbs=list("state","world"),
+                      regs=list(".", c("Can","Mex")),
+                      ...
                       ){    
     
-    ## need to subset data to range to get contour labels at edge of plot
+    ## need to subset data to range to get z-limits right
 
     ix <- lon %within% xr
     iy <- lat %within% yr
@@ -261,20 +299,40 @@ advection <- function(quv, xr=c(-135,-55), yr=c(20,60), main=NULL,
     u <- sdata["U850",,] * windscale
     v <- sdata["V850",,] * windscale
     q <- sdata["Q850",,] * sqrt(u^2 + v^2)/windscale
-    
+
+    zr <- c(0, max(q))
 
 #    dev.new(width=12, height=7)
 
-
-    image(slon, slat, q, col=climap[["Q850"]], ylim=yr, xlim=xr,
-          xlab="", ylab="", main=main, zlim=c(0,max(q)))
+    image(slon, slat, q, col=cmap, ylim=yr, xlim=xr, zlim=zr,
+          xlab="", ylab="", main=main)
 
     ## double up on map lines so they're visible against cubehelix    
-    map("state", add=TRUE, col='yellow', lwd=2)
-    map("state", add=TRUE, col='blue', lwd=1)
+    mapply(map, dbs, regs, MoreArgs=list(add=TRUE, lwd=2, col=mapcol2))
+    mapply(map, dbs, regs, MoreArgs=list(add=TRUE, lwd=1, col=mapcol1))
     
-    map("world", c("can","mex"), add=TRUE, col='yellow', lwd=2)
-    map("world", c("can","mex"), add=TRUE, col='blue', lwd=1)
-
-    arrows(lon2d, lat2d, lon2d+u, lat2d+v, length=0.02) #, lwd=2)
+    ## 
+    if(arrowcol == "contrast"){
+        amap <- bwcontrast(cmap)[q * 254/max(q)+1]
+    } else {
+        amap <- arrowcol
+    }
+    
+    arrows(lon2d, lat2d, lon2d+u, lat2d+v, length=0.02, col=amap)
 }
+
+
+## creates a colormap that is black where cmap is light and white
+## where it's dark.
+
+bwcontrast <- function(cmap){
+    val <- (col2rgb(cmap) |> rgb2hsv())[3,]
+    c("black","white")[1+(val < 0.5)]
+}
+
+## Inverts the cmap colors RGB-wise
+
+invertcmap <- function(cmap){
+    (255 - col2rgb(cmap)) |> t() |> rgb(max=255)
+}
+
