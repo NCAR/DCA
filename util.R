@@ -1,3 +1,5 @@
+library(abind)
+
 ## TODO: make this work
 
 # .checkargs <- function(){
@@ -29,6 +31,26 @@
 # #    .checkargs(range, lower, upper)
 #     cat("rlu", range, lower, upper)
 # }
+
+
+## subset an array with coordinate dimensions
+#crop <- function(z, xr=NULL, yr=NULL, dnn=list(x="lon", y="lat")){
+#    .checkargs()
+
+# @param x: an array to be cropped
+
+# @param sub: a named list of bounds; element name = name of dim,
+#      element value = range of coords to keep along that dim.
+
+crop <- function(z, sub){
+    for(d in names(sub)){
+        coord <- as.numeric(dimnames(z)[[d]])
+        ind <- coord %within% sub[[d]]
+        dind <- which(names(dimnames(z)) == d)
+        z <- asub(z, ind, dind)
+    }
+    return(z)
+}
 
 
 ## discard non-finite & values outside range
