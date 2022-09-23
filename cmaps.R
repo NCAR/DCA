@@ -3,52 +3,9 @@ library(colorspace)
 
 N <- 256
 
-## colormap for absolute variable values
-climap <- list(
-    U850=brewer.piyg(N),
-    V850=brewer.puor(N),
-    Q850=rev(cubehelix(N)),
-    T700=inferno(N),
-    Z700=tweak(banded256, 0.05),
-    Z500=tweak(banded256, -0.1),
-    U250=isol(N),
-#    U250=brewer.bugn(N),
-#    Z700=gnuplot(N),
-#    Z500=brewer.spectral(N),
-#    U250=colorRampPalette(c("blue","red","green"))(N),
-    V250=brewer.puor(N)
-    )  
-
-## colormap for anomaly (zero-centered) variables
-anomap <- list(
-    U850=brewer.piyg(N),
-    V850=brewer.puor(N),
-    Q850=brewer.brbg(N),
-    T700=brewer.rdbu(N),
-    Z700=brewer.spectral(N),
-    Z500=brewer.spectral(N),
-    U250=brewer.piyg(N),
-    V250=brewer.puor(N)
-    )
-
-## brown-green-blue base colormap for precip buckets
-
-## Other options that look decent:
-## R4[7,3,4], obs -0.2, rcp85 +0.2
-## (peru, forestgreen, royalblue3), hist +0.1, rcp85 +0.3
-
 tweak <- function(C, x){
     adjustcolor(C, offset=c(1,1,1,0)*x) |> setNames(names(C))
 }
-
-buckets <- c("dry","moist","wet")
-baseline <- palette.colors(8,"Paired")[c(8,4,2)] |> setNames(buckets)
-bucketmap <- list(obs=tweak(baseline, -0.1),
-                  hist=baseline,
-                  rcp85=tweak(baseline, 0.2))
-
-save(file="plot/cmaps.Rdata", climap, anomap, bucketmap)
-
 
 
 banded256 <- rgb(maxColorValue=255, matrix(byrow=TRUE, ncol=3, c(
@@ -309,3 +266,53 @@ banded256 <- rgb(maxColorValue=255, matrix(byrow=TRUE, ncol=3, c(
 133,  12, 109,
 126,  16, 106
 )))
+
+
+## colormap for absolute variable values
+climap <- list(
+    U850=brewer.piyg(N),
+    V850=brewer.puor(N),
+    Q850=rev(cubehelix(N)),
+    T700=inferno(N),
+#    Z700=tweak(banded256, 0.05),
+#    Z700=gnuplot(N),
+    Z700=rev(kovesi.diverging_rainbow_bgymr_45_85_c67(N)),
+#    Z500=tweak(banded256, -0.1),
+    Z500=brewer.spectral(N),
+#    U250=brewer.bugn(N),
+#    U250=isol(N),
+#    U250=kovesi.isoluminant_cgo_70_c39(N),
+#    U250=colorRampPalette(c("blue","red","green"))(N),
+#    U250=cubicyf(N),
+    U250=rev(viridis(N)),
+    V250=brewer.puor(N)
+    )  
+
+## colormap for anomaly (zero-centered) variables
+anomap <- list(
+    U850=brewer.piyg(N),
+    V850=brewer.puor(N),
+    Q850=brewer.brbg(N),
+    T700=brewer.rdbu(N),
+    Z700=brewer.spectral(N),
+    Z500=brewer.spectral(N),
+    U250=brewer.piyg(N),
+    V250=brewer.puor(N)
+    )
+
+## brown-green-blue base colormap for precip buckets
+
+## Other options that look decent:
+## R4[7,3,4], obs -0.2, rcp85 +0.2
+## (peru, forestgreen, royalblue3), hist +0.1, rcp85 +0.3
+
+
+buckets <- c("dry","moist","wet")
+baseline <- palette.colors(8,"Paired")[c(8,4,2)] |> setNames(buckets)
+bucketmap <- list(obs=tweak(baseline, -0.1),
+                  hist=baseline,
+                  rcp85=tweak(baseline, 0.2))
+
+save(file="plot/cmaps.Rdata", climap, anomap, bucketmap)
+
+
