@@ -274,7 +274,7 @@ advection <- function(quv, xr=c(-135,-55), yr=c(20,60),
                       dbs=list("state","world"),
                       regs=list(".", c("Can","Mex")),
                       ...
-                      ){    
+                      ){
     
     ## need to subset data to range to get z-limits right
 
@@ -295,7 +295,7 @@ advection <- function(quv, xr=c(-135,-55), yr=c(20,60),
 #    dev.new(width=12, height=7)
 
     image(slon, slat, q, col=cmap, ylim=yr, xlim=xr, zlim=zr,
-          xlab="", ylab="")
+          xlab="", ylab="", ...)
 
     ## halo on map boundaries makes them show better
     if(!halo){ mapcol[2] <-NA }
