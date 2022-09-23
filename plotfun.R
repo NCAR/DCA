@@ -124,6 +124,13 @@ distplots <- function(x, y, xylim=narange(x,y),
 
 ## @param maplwd: line width for map overlay
 
+## @param halo, hcolor, hwidth: it may be hard to see map borders
+## against colormaps that have both light and dark values, like
+## cubehelix.  If halo=TRUE, gridmap uses the halomap() function to
+## draw map borders twice in contrasting colors to make them show up
+## better.  Borders are drawn first in hcolor with lwd=maplwd*hwidth,
+## and then re-drawn in mapcol with lwd=maplwd.
+
 ## @param spacing: spacing between gridded map panels, in inches.
 
 ## @param cbhi: adjustment to height of the colorbar, in inches.
@@ -148,6 +155,7 @@ gridmap <- function(x, y, z,
                     dbs=list("state","world"),
                     regs=list(".", c("Can","Mex")),
                     mapcol='darkgray', maplwd=1/2,
+                    halo=FALSE, hcolor="white", hwidth=2,
                     spacing=c(1,1,1,1)/20, cbhi=0,
                     margi=c(2,3,5,3,2,2)/8, uniti=1/8,
                     ...){
@@ -201,7 +209,12 @@ gridmap <- function(x, y, z,
             if(m==mods[1]) title(v, line=1, cex=2, xpd=NA)
             if(m==mods[nm]) axis(1)
             if(v==vars[nv]) axis(4)
-            mapply(map, dbs, regs, MoreArgs=list(add=TRUE, lwd=maplwd, col=mapcol))
+
+            ## add map boundaries with optional halo
+            mapargs <- list(add=TRUE, lwd=maplwd, col=mapcol,
+                            hcol=ifelse(halo, hcolor, NA),
+                            hlwd=ifelse(halo, hwidth, NA))
+            mapply(halomap, dbs, regs, MoreArgs=mapargs)
         }
     }
     mtext(mods, side=2, outer=TRUE, line=0.5, at=(nm:1 - 1/2)/nm)
@@ -325,8 +338,9 @@ advection <- function(quv, xr=c(-135,-55), yr=c(20,60),
 
 halomap <- function(..., lwd=1, hlwd=2*lwd,
                     col="black", hcol="white", add=TRUE){
-    map(..., lwd=hlwd, col=hcol, add=add)
-    map(..., lwd=lwd, col=col, add=TRUE)
+    halo = !is.na(hlwd) && !is.na(hcol)
+    if(halo){ map(..., lwd=hlwd, col=hcol, add=add) }
+    map(..., lwd=lwd, col=col, add=ifelse(halo, TRUE, add))
 }
 
 
