@@ -219,7 +219,7 @@ gridmap <- function(x, y, z,
         cbz <- t(matrix(rep(1:N, each=3), nrow=3))
         
         image(x=cbx, z=cbz, col=cbmap, yaxt='n')
-        mtext(units[v], side=2, las=2, cex=0.7, line=1/4)
+        mtext(gsub(" ", "\n", units[v]), side=2, las=2, cex=0.7, line=1/4)
     }
 }
 
@@ -288,7 +288,8 @@ advection <- function(quv, xr=c(-135,-55), yr=c(20,60),
     
     u <- sdata["U850",,]
     v <- sdata["V850",,]
-    q <- sdata["Q850",,] * sqrt(u^2 + v^2)
+#    q <- sdata["Q850",,] * sqrt(u^2 + v^2)
+    q <- sdata["A850",,]
 
     zr <- c(0, max(q))
 

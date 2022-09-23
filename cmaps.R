@@ -16,8 +16,10 @@ climap <- list(
     T700=inferno(N),
     Z700=rev(kovesi.diverging_rainbow_bgymr_45_85_c67(N)),
     Z500=brewer.spectral(N),
-    U250=rev(viridis(N)),
-    V250=brewer.puor(N)
+#    U250=rev(viridis(N)),
+    U250=rev(parula(N)),
+    V250=brewer.puor(N),
+    A850=rev(cubehelix(N))
     )  
 
 ## colormap for anomaly (zero-centered) variables
@@ -29,7 +31,8 @@ anomap <- list(
     Z700=brewer.spectral(N),
     Z500=brewer.spectral(N),
     U250=brewer.piyg(N),
-    V250=brewer.puor(N)
+    V250=brewer.puor(N),
+    A850=brewer.brbg(N)
     )
 
 ## brown-green-blue base colormap for precip buckets

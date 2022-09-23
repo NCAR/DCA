@@ -19,7 +19,21 @@ listload <- function(filepath){
     as.list(temp_env)
 }
 
-total <- listload("data/MPI/anom/total.Rdata")
+
+## calculate moisture advection
+## abind::asub lets us not care how many dimensions there are
+calcA <- function(arr){
+    u <- asub(arr, "U850", 1)
+    v <- asub(arr, "V850", 1)
+    q <- asub(arr, "Q850", 1)
+    a <- q * sqrt(u^2 + v^2)
+    abind(arr, A850=a, along=1, use.dnns=TRUE)
+}
+
+total <- listload("data/MPI/anom/total.Rdata") |> rapply(calcA, how="replace")
+
+vars <- c(vars, "A850")
+uaunits["A850"] <- paste(uaunits["Q850"], uaunits["U850"])
 
 
 ## looping goes here
@@ -45,7 +59,8 @@ bdata <- lapply(infiles, listload) |> setname(modper)
 
 ocf <- c("obs","hist","rcp85")  ## plotting order
 
-dev.new(width=12, height=4)
+#dev.new(width=12, height=4)
+dev.new(width=13.5, height=4)
 
 gridmap(lon, lat, abind(total$baseline[ocf], along=0), mapcol='black',
         cmaps=climap, units=uaunits, xlim=xr, ylim=yr,
