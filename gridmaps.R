@@ -12,6 +12,7 @@ source("names.R")
 #yr <- c(15,65)
 xr <- c(-135,-55)
 yr <- c(20,60)
+bounds <- list(lon=xr, lat=yr)
 
 ## load data into a list instead of the global environment
 listload <- function(filepath){
@@ -54,16 +55,20 @@ bdata <- list()
 bdata <- lapply(infiles, listload) |> setname(modper)
 
 
+## crop UA data to CONUS region so that plotted z-ranges are correct
+
+uaconus <- rapply(total, crop, sub=bounds, how="replace")
+clon <- lon[lon %within% xr]
+clat <- lat[lat %within% yr]
 
 ## baselines
 
 ocf <- c("obs","hist","rcp85")  ## plotting order
 
-#dev.new(width=12, height=4)
 dev.new(width=13.5, height=4)
 
-gridmap(lon, lat, abind(total$baseline[ocf], along=0), mapcol='black',
-        cmaps=climap, units=uaunits, xlim=xr, ylim=yr,
+gridmap(clon, clat, abind(uaconus$baseline[ocf], along=0), mapcol='black',
+        cmaps=climap, units=uaunits,
         main="Baseline upper atmosphere climatology")
 
 
@@ -78,10 +83,9 @@ dev.new(width=7, height=11)
 #}
 #mtext("May moisture advection", side=3, outer=TRUE)
 
-gridmap(lon, lat, abind(total$baseline[ocf], along=0)[,"A850",,,drop=FALSE],
-        mapcol='black', cmaps=climap, units=uaunits, xlim=xr, ylim=yr,
+gridmap(clon, clat, abind(uaconus$baseline[ocf], along=0)[,"A850",,,drop=FALSE],
+        mapcol='black', cmaps=climap, units=uaunits,
         main="May moisture advection")
-
 
 ## bucketized climatology
 

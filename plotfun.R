@@ -196,7 +196,7 @@ gridmap <- function(x, y, z,
     
     for(m in mods){
         for(v in vars){
-            image(lon, lat, z[m,v,,], zlim=zlims[[v]], col=cmaps[[v]],
+            image(x, y, z[m,v,,], zlim=zlims[[v]], col=cmaps[[v]],
                   xaxt='n', yaxt='n', ann=FALSE, ...)
             if(m==mods[1]) title(v, line=1, cex=2, xpd=NA)
             if(m==mods[nm]) axis(1)
