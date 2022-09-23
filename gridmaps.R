@@ -71,14 +71,16 @@ gridmap(lon, lat, abind(total$baseline[ocf], along=0), mapcol='black',
 ## May moisture advection plot
 
 dev.new(width=7, height=11)
-par(mfrow=c(3,1), oma=c(0,0,3,0), mar=c(5,5,5,3)/2, mgp=c(2,2/3,0))
+#par(mfrow=c(3,1), oma=c(0,0,3,0), mar=c(5,5,5,3)/2, mgp=c(2,2/3,0))
 
-for(p in ocf){
-    advection(total$totclim[[p]][,,,"May"], main=p)
-}
-mtext("May moisture advection", side=3, outer=TRUE)
-## TODO: colorbar, common ranges
+#for(p in ocf){
+#    advection(total$totclim[[p]][,,,"May"], main=p)
+#}
+#mtext("May moisture advection", side=3, outer=TRUE)
 
+gridmap(lon, lat, abind(total$baseline[ocf], along=0)[,"A850",,,drop=FALSE],
+        mapcol='black', cmaps=climap, units=uaunits, xlim=xr, ylim=yr,
+        main="May moisture advection")
 
 
 ## bucketized climatology
