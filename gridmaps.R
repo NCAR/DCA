@@ -76,13 +76,15 @@ gridmap(clon, clat, abind(uaconus$baseline[ocf], along=0), mapcol='black',
 ## May moisture advection plot
 
 dev.new(width=7, height=11)
-#par(mfrow=c(3,1), oma=c(0,0,3,0), mar=c(5,5,5,3)/2, mgp=c(2,2/3,0))
+par(mfrow=c(3,1), oma=c(0,0,3,0), mar=c(5,5,5,3)/2, mgp=c(2,2/3,0))
 
-#for(p in ocf){
-#    advection(total$totclim[[p]][,,,"May"], main=p)
-#}
-#mtext("May moisture advection", side=3, outer=TRUE)
+for(p in ocf){
+    advection(total$totclim[[p]][,,,"May"], main=p)
+}
+mtext("May moisture advection", side=3, outer=TRUE)
 
+
+dev.new(width=7, height=11)
 gridmap(clon, clat, abind(uaconus$baseline[ocf], along=0)[,"A850",,,drop=FALSE],
         mapcol='black', cmaps=climap, units=uaunits,
         main="May moisture advection")
