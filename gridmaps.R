@@ -37,6 +37,7 @@ vars <- c(vars, "A850")
 uaunits["A850"] <- paste(uaunits["Q850"], uaunits["U850"])
 
 
+
 ## looping goes here
 
 xx = "x098"
@@ -81,16 +82,6 @@ gridmap(clon, clat, basedata, mapcol='black',
 maydata <- abind(uaconus$totclim[ocf], along=0, use.dnns=TRUE)[,,,,"May"] |>
     setname("period", "ndn")
 
-
-dev.new(width=7, height=11)
-par(mfrow=c(3,1), oma=c(0,0,3,0), mar=c(5,5,5,3)/2, mgp=c(2,2/3,0))
-
-for(p in ocf){
-    advection(total$totclim[[p]][,,,"May"], main=p)
-}
-mtext("May moisture advection", side=3, outer=TRUE)
-
-
 facets <- as.data.frame(
     cbind(
         raster  = list("A850",           "Z500",           "T700"),
@@ -104,7 +95,7 @@ facets <- as.data.frame(
 )
 
 dev.new(width=7, height=11)
-#gridmap(clon, clat, abind(uaconus$baseline[ocf], along=0)[,"A850",,,drop=FALSE],
+
 gridmap(clon, clat, maydata, facets["qflux",], cmaps=climap, units=uaunits,
         main="May moisture advection", mapcol="black")
 

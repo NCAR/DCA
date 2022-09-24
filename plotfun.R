@@ -178,13 +178,7 @@ gridmap <- function(x, y, z,
                     margi=c(2,3,5,3,2,2)/8, uniti=1/8,
                     ...){
     
-#    mods <- dimnames(z)[[1]]
-#    vars <- dimnames(z)[[2]]
-#    nm <- length(mods)
-#    nv <- length(vars)
-
-
-    ## fill out missing defaults
+    ## fill in any missing defaults
 
     ## cases to plot
     if(missing(facets)){
@@ -201,14 +195,13 @@ gridmap <- function(x, y, z,
     nc <- length(cases)
     
     
-    ## default: by column
+    ## default zlims by column
     if(missing(zlims)){
         zlims <- apply(z, 2, narange) |> as.data.frame() |> as.list()
     }
 
     ## if single range given, reuse for all facets
     if(!is.list(zlims)){
-#        zlims <- rep(list(zlims), nm) |> setname(vars)
         zlims <- rep(list(zlims), nm) |> setname(rownames(facets))
     }
 
@@ -219,7 +212,6 @@ gridmap <- function(x, y, z,
 
     ## if single cmap given, reuse for all vars
     if(!is.list(cmaps)){
-#        cmaps <- rep(list(cmaps), nm) |> setname(vars)
         cmaps <- rep(list(cmaps), nm) |> setname(rownames(facets))
     }
 
@@ -234,23 +226,15 @@ gridmap <- function(x, y, z,
     
     ## plotting
     
-#    mfrow <- c(nm, nv)
     mfrow <- c(nc, nf)
     par(mfrow=mfrow, omi=gridomi, mai=spacing)
     
-#    for(m in mods){
-#        for(v in vars){
     for(C in cases){
         for(f in rownames(facets)){
             v <- facets[[f,"raster"]]
-#            v <- facets$raster[[f]]
-#            image(x, y, z[m,v,,], zlim=zlims[[v]], col=cmaps[[v]],
             zz <- z[C,v,,]
             image(x, y, zz, zlim=zlims[[v]], col=cmaps[[v]],
                   xaxt='n', yaxt='n', ann=FALSE, ...)
-#            if(m==mods[1]) title(v, line=1, cex=2, xpd=NA)
-#            if(m==mods[nm]) axis(1)
-#            if(v==vars[nv]) axis(4)
             if(C==cases[1]) title(v, line=1, cex=2, xpd=NA)
             if(C==cases[nc])            axis(1)
             if(f==rownames(facets)[nf]) axis(4)
@@ -261,6 +245,7 @@ gridmap <- function(x, y, z,
                             hlwd=ifelse(halo, hwidth, NA))
             mapply(halomap, dbs, regs, MoreArgs=mapargs)
 
+            ## add arrows if vector variables defined
             if(!is.null(facets[[f,"vector"]])){
                 if(arrowcol == "contrast") {
                     amap <- bwcontrast(cmaps[[v]])[zz * 254/max(zz)+1]
@@ -274,18 +259,15 @@ gridmap <- function(x, y, z,
             }
         }
     }
-#    mtext(mods, side=2, outer=TRUE, line=0.5, at=(nm:1 - 1/2)/nm)
     mtext(cases, side=2, outer=TRUE, line=0.5, at=(nc:1 - 1/2)/nc)
     mtext(main, side=3, line=2, outer=TRUE)
     
-    ## colorbars
+    ## colorbars at bottom of each column
     
     par(new=TRUE, omi=cbaromi, mai=c(0,1,0,1)*uniti + spacing,
         mfrow=c(1,nf), mfg=c(1,1))
-#        mfrow=c(1,nv), mfg=c(1,1))
 
     for(f in rownames(facets)){
-#    for(v in vars){
         v <- facets[[f,"raster"]]
         cbmap <- cmaps[[v]]
         N <- length(cbmap)
@@ -295,95 +277,6 @@ gridmap <- function(x, y, z,
         image(x=cbx, z=cbz, col=cbmap, yaxt='n')
         mtext(gsub(" ", "\n", units[v]), side=2, las=2, cex=0.7, line=1/4)
     }
-}
-
-
-
-#######  Moisture advection plot
-
-## image plot Q * windspeed with wind arrows overlaid
-
-## @param quv: array[var,lon,lat] of Q, U, & V, with dimvars
-
-## @param xr/yr: longitude/latitude range for plot
-
-## @param lon/lat: lon/lat values of data (xr needs not equal range(lon))
-
-## @param cmap: color map for humidity image component; default for
-## this analysis is cubehelix, which no single color will contrast
-## well with over the entire range, hence the fancy options for map
-## and arrow colors.
-
-## @param arrowcol: color for wind arrows.  Default is "contrast",
-## which uses the bwcontrast() function to make them black where the
-## background humidity image is light and white where it's dark.
-
-## @param mapcol2, mapcol2: two colors for draing map borders.  To get
-## good contrast against the default cubehelix colormap, borders are
-## drawn first using color2 with linewidth=2, then redrawn with
-## linewidth=1 in color2.  If color1 and color2 are blue and yellow,
-## respectively, you get what looks like a black line with a small
-## white halo, which shows up well against the background but doesn't
-## compete with arrows where they overlap.
-
-## @param dbs: a list of geographical databases (e.g., "state" for US
-## states) to be overlaid using map().  Overlays are skipped if this
-## argument is NULL.  Defaults to North America (US states + Canada &
-## Mexico).
-
-## @param regs: a list of regions to be overlaid for each database in
-## dbs.  Use '.' to get all regions in the database.
-
-## @param ...: further arguments passed to image()
-
-## TODO: add colorbar
-
-
-advection <- function(quv, xr=c(-135,-55), yr=c(20,60),
-                      lon=as.numeric(dimnames(quv)$lon),
-                      lat=as.numeric(dimnames(quv)$lat),
-                      cmap=climap[["Q850"]],
-                      arrowcol="contrast",
-                      halo=TRUE, mapcol=c("black","white"),
-                      dbs=list("state","world"),
-                      regs=list(".", c("Can","Mex")),
-                      ...
-                      ){
-    
-    ## need to subset data to range to get z-limits right
-
-    ix <- lon %within% xr
-    iy <- lat %within% yr
-
-    slon <- lon[ix]
-    slat <- lat[iy]
-
-    sdata <- quv[,ix,iy]
-    
-    u <- sdata["U850",,]
-    v <- sdata["V850",,]
-#    q <- sdata["Q850",,] * sqrt(u^2 + v^2)
-    q <- sdata["A850",,]
-
-    zr <- c(0, max(q))
-
-#    dev.new(width=12, height=7)
-
-    image(slon, slat, q, col=cmap, ylim=yr, xlim=xr, zlim=zr,
-          xlab="", ylab="", ...)
-
-    ## halo on map boundaries makes them show better
-    if(!halo){ mapcol[2] <-NA }
-    mapply(halomap, dbs, regs, col=mapcol[1], hcol=mapcol[2])
-    
-
-    if(arrowcol == "contrast"){
-        amap <- bwcontrast(cmap)[q * 254/max(q)+1]
-    } else {
-        amap <- arrowcol
-    }
-
-    vectorfield(slon, slat, u, v, length=0.02, col=amap)    
 }
 
 
