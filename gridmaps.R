@@ -73,7 +73,7 @@ basedata <- abind(uaconus$baseline[ocf], along=0, use.dnns=TRUE) |>
 
 gridmap(clon, clat, basedata, mapcol='black',
         cmaps=climap, units=uaunits,
-        main="Baseline upper atmosphere climatology")
+        main="MPI baseline  upper atmosphere annual climatology")
 
 
 
@@ -94,10 +94,11 @@ facets <- as.data.frame(
     )
 )
 
-dev.new(width=7, height=11)
 
-gridmap(clon, clat, maydata, facets["qflux",], cmaps=climap, units=uaunits,
-        main="May moisture advection", mapcol="black")
+dev.new(width=14, height=9)
+
+gridmap(clon, clat, maydata, facets, cmaps=climap, units=uaunits,
+        main="MPI upper atmosphere May climatology", mapcol="black", fatten=TRUE)
 
 
 

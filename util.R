@@ -80,6 +80,9 @@ clamp <- function(x, range=NULL, lower=-Inf, upper=Inf, na=NULL, nan=na){
     return(pmin(upper, pmax(lower, x)))
 }
 
+## rescale values to [0,1] range
+unitize <- function(x){(x - min(x)) / diff(narange(x))}
+
 
 ## range() with correct default for na.rm
 narange <- function(...){range(..., na.rm=TRUE)}

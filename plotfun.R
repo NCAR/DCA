@@ -147,6 +147,13 @@ distplots <- function(x, y, xylim=narange(x,y),
 ## "contrast", which uses the bwcontrast() function to make them black
 ## where the raster image is light and white where it's dark.
 
+## @param fatten: whether to fatten vector-field arrows based on
+## magnitude.  If TRUE, arrow width for minimum value of vector field
+## is lwd, and arrow width for the maximum value is double that.  If
+## set to a numeric value, adds that many times the line width.  So
+## fatten=2 makes arrows up to 3x the basic lwd, and fatten=-1/2 makes
+## short arrows thick and long arrows thin.
+
 ## @param spacing: spacing between gridded map panels, in inches.
 
 ## @param cbhi: adjustment to height of the colorbar, in inches.
@@ -173,7 +180,7 @@ gridmap <- function(x, y, z,
                     regs=list(".", c("Can","Mex")),
                     mapcol='darkgray', maplwd=1/2,
                     halo=FALSE, hcolor="white", hwidth=2,
-                    arrowcol="contrast",
+                    arrowcol="contrast", fatten=FALSE,
                     spacing=c(1,1,1,1)/20, cbhi=0,
                     margi=c(2,3,5,3,2,2)/8, uniti=1/8,
                     ...){
@@ -255,7 +262,7 @@ gridmap <- function(x, y, z,
                 
                 uu <- z[C,facets[[f,"vector"]][1],,]
                 vv <- z[C,facets[[f,"vector"]][2],,]
-                vectorfield(x, y, uu, vv, length=0.02, col=amap)
+                vectorfield(x, y, uu, vv, col=amap, fatten=fatten)
             }
         }
     }
@@ -302,12 +309,21 @@ halomap <- function(..., lwd=1, hlwd=2*lwd,
 
 ## @param x,y: 1-d vectors of x & y coordinates for data
 ## @param u,v: 2-d arrays of u & v components of vector field data
-## @param ...: additional arguments to pass to arrows()
+
+## @param fatten: how much to fatten arrows based on magnitude.  FALSE
+## = 0 = no fattening, TRUE = 1 = double width for max, 2 = triple
+## width for max, etc.
+
+## @param length: length of the arrowhead in inches.
+
+## @param lwd: line width for arrows
+
+## @param ...: additional arguments to pass to arrows().
 
 ## return: invisibly returns the scaling factor, in case you want to
 ## use it in a legend or something.
 
-vectorfield <- function(x, y, u, v, ...){
+vectorfield <- function(x, y, u, v, fatten=FALSE, length=0.015, lwd=par()$lwd, ...){
 
     nx <- length(x)
     ny <- length(y)
@@ -319,8 +335,12 @@ vectorfield <- function(x, y, u, v, ...){
     wscale <- mean(c(diff(x), diff(y))) / max(abs(range(c(u,v))))
     u2 <- u * wscale
     v2 <- v * wscale
+
+    if(fatten){
+        lwd <- lwd * (1 + fatten * unitize(sqrt(u^2 + v^2)))
+    }
     
-    arrows(x2d, y2d, x2d+u2, y2d+v2, ...)
+    arrows(x2d, y2d, x2d+u2, y2d+v2, lwd=lwd, length=length, ...)
     invisible(wscale)
 }
 
