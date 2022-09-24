@@ -100,6 +100,18 @@ distplots <- function(x, y, xylim=narange(x,y),
 ## headers.  If x/y are not lon/lat values, be sure to disable map
 ## overlays by setting dbs to NULL.
 
+## @param facets: a dataframe with columns named "raster", "vector",
+## "contour", and "title" indicating how to plot different variables
+## of the z-array in different columns.  Each row of the dataframe
+## corresponds to a column in the grid.  Entries in the "raster"
+## "fields" column are the names of variables to plot as rasters
+## fields using image(), entries in the "vector" column are pairs of
+## variable names overplotted as arrows using vectorfield(). and
+## entries in the "contour" column are overplotted using contour().
+## If facets$title is NULL, it uses the values of facets$raster as a
+## default.  If facets is NULL, it defaults to raster-plotting each
+## variable as defined by dimnames(z)$var.
+
 ## @param cmaps: a named list of colormaps, one per variable.  When
 ## unspecified, viridis(256) is used as a default.
 
@@ -150,6 +162,7 @@ distplots <- function(x, y, xylim=narange(x,y),
 ## overwritten.
 
 gridmap <- function(x, y, z,
+                    facets=NULL,
                     cmaps=NULL, zlims=NULL,
                     units=NULL, main=NULL,
                     dbs=list("state","world"),
@@ -159,23 +172,39 @@ gridmap <- function(x, y, z,
                     spacing=c(1,1,1,1)/20, cbhi=0,
                     margi=c(2,3,5,3,2,2)/8, uniti=1/8,
                     ...){
-
-    mods <- dimnames(z)[[1]]
-    vars <- dimnames(z)[[2]]
-    nm <- length(mods)
-    nv <- length(vars)
+    
+#    mods <- dimnames(z)[[1]]
+#    vars <- dimnames(z)[[2]]
+#    nm <- length(mods)
+#    nv <- length(vars)
 
 
     ## fill out missing defaults
 
+    ## cases to plot
+    if(missing(facets)){
+        facets <- as.data.frame(cbind(raster = dimnames(z)$var))
+        rownames(facets) <- facets$raster
+    }
+    if(is.null(facets$title)){
+        facets$title <- facets$raster
+    }
+
+
+    nf <- nrow(facets)
+    cases <- dimnames(z)[[1]]
+    nc <- length(cases)
+    
+    
     ## default: by column
     if(missing(zlims)){
         zlims <- apply(z, 2, narange) |> as.data.frame() |> as.list()
     }
 
-    ## if single range given, reuse for all vars
+    ## if single range given, reuse for all facets
     if(!is.list(zlims)){
-        zlims <- rep(list(zlims), nm) |> setname(vars)
+#        zlims <- rep(list(zlims), nm) |> setname(vars)
+        zlims <- rep(list(zlims), nm) |> setname(rownames(facets))
     }
 
     ## if no cmap given, use rwb palette
@@ -185,7 +214,8 @@ gridmap <- function(x, y, z,
 
     ## if single cmap given, reuse for all vars
     if(!is.list(cmaps)){
-        cmaps <- rep(list(cmaps), nm) |> setname(vars)
+#        cmaps <- rep(list(cmaps), nm) |> setname(vars)
+        cmaps <- rep(list(cmaps), nm) |> setname(rownames(facets))
     }
 
 
@@ -199,16 +229,25 @@ gridmap <- function(x, y, z,
     
     ## plotting
     
-    mfrow <- c(nm, nv)
+#    mfrow <- c(nm, nv)
+    mfrow <- c(nc, nf)
     par(mfrow=mfrow, omi=gridomi, mai=spacing)
     
-    for(m in mods){
-        for(v in vars){
-            image(x, y, z[m,v,,], zlim=zlims[[v]], col=cmaps[[v]],
+#    for(m in mods){
+#        for(v in vars){
+    for(C in cases){
+        for(f in rownames(facets)){
+            v <- facets[[f,"raster"]]
+#            v <- facets$raster[[f]]
+#            image(x, y, z[m,v,,], zlim=zlims[[v]], col=cmaps[[v]],
+            image(x, y, z[C,v,,], zlim=zlims[[v]], col=cmaps[[v]],
                   xaxt='n', yaxt='n', ann=FALSE, ...)
-            if(m==mods[1]) title(v, line=1, cex=2, xpd=NA)
-            if(m==mods[nm]) axis(1)
-            if(v==vars[nv]) axis(4)
+#            if(m==mods[1]) title(v, line=1, cex=2, xpd=NA)
+#            if(m==mods[nm]) axis(1)
+#            if(v==vars[nv]) axis(4)
+            if(C==cases[1]) title(v, line=1, cex=2, xpd=NA)
+            if(C==cases[nc])            axis(1)
+            if(f==rownames(facets)[nf]) axis(4)
 
             ## add map boundaries with optional halo
             mapargs <- list(add=TRUE, lwd=maplwd, col=mapcol,
@@ -217,15 +256,19 @@ gridmap <- function(x, y, z,
             mapply(halomap, dbs, regs, MoreArgs=mapargs)
         }
     }
-    mtext(mods, side=2, outer=TRUE, line=0.5, at=(nm:1 - 1/2)/nm)
+#    mtext(mods, side=2, outer=TRUE, line=0.5, at=(nm:1 - 1/2)/nm)
+    mtext(cases, side=2, outer=TRUE, line=0.5, at=(nc:1 - 1/2)/nc)
     mtext(main, side=3, line=2, outer=TRUE)
     
     ## colorbars
     
     par(new=TRUE, omi=cbaromi, mai=c(0,1,0,1)*uniti + spacing,
-        mfrow=c(1,nv), mfg=c(1,1))
-    
-    for(v in vars){
+        mfrow=c(1,nf), mfg=c(1,1))
+#        mfrow=c(1,nv), mfg=c(1,1))
+
+    for(f in rownames(facets)){
+#    for(v in vars){
+        v <- facets[[f,"raster"]]
         cbmap <- cmaps[[v]]
         N <- length(cbmap)
         cbx <- do.call(seq, as.list(c(zlims[[v]], len=N)))

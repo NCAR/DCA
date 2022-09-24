@@ -67,13 +67,20 @@ ocf <- c("obs","hist","rcp85")  ## plotting order
 
 dev.new(width=13.5, height=4)
 
-gridmap(clon, clat, abind(uaconus$baseline[ocf], along=0), mapcol='black',
+basedata <- abind(uaconus$baseline[ocf], along=0, use.dnns=TRUE) |>
+    setname("period", "ndn")
+
+gridmap(clon, clat, basedata, mapcol='black',
         cmaps=climap, units=uaunits,
         main="Baseline upper atmosphere climatology")
 
 
 
 ## May moisture advection plot
+
+maydata <- abind(uaconus$totclim[ocf], along=0, use.dnns=TRUE)[,,,,"May"] |>
+    setname("period", "ndn")
+
 
 dev.new(width=7, height=11)
 par(mfrow=c(3,1), oma=c(0,0,3,0), mar=c(5,5,5,3)/2, mgp=c(2,2/3,0))
@@ -84,10 +91,24 @@ for(p in ocf){
 mtext("May moisture advection", side=3, outer=TRUE)
 
 
+facets <- as.data.frame(
+    cbind(
+        raster  = list("A850",           "Z500",           "T700"),
+        vector  = list(c("U850","V850"), c("U250","V250"), NULL),
+        contour = list(NULL,             NULL,             "Z700"),
+        title   = list(
+            qflux  = "850-mb moisture flux",
+            hicirc = "250-mb wind + 500-mb geopotential",
+            p700   = "700-mb temperature & geopotential")
+    )
+)
+
 dev.new(width=7, height=11)
-gridmap(clon, clat, abind(uaconus$baseline[ocf], along=0)[,"A850",,,drop=FALSE],
-        mapcol='black', cmaps=climap, units=uaunits,
-        main="May moisture advection")
+#gridmap(clon, clat, abind(uaconus$baseline[ocf], along=0)[,"A850",,,drop=FALSE],
+gridmap(clon, clat, maydata, facets["qflux",], cmaps=climap, units=uaunits,
+        main="May moisture advection", mapcol="black", halo=TRUE)
+
+
 
 ## bucketized climatology
 
