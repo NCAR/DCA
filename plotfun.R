@@ -143,6 +143,10 @@ distplots <- function(x, y, xylim=narange(x,y),
 ## better.  Borders are drawn first in hcolor with lwd=maplwd*hwidth,
 ## and then re-drawn in mapcol with lwd=maplwd.
 
+## @param arrowcol: color for vector-field arrows.  Default is
+## "contrast", which uses the bwcontrast() function to make them black
+## where the raster image is light and white where it's dark.
+
 ## @param spacing: spacing between gridded map panels, in inches.
 
 ## @param cbhi: adjustment to height of the colorbar, in inches.
@@ -169,6 +173,7 @@ gridmap <- function(x, y, z,
                     regs=list(".", c("Can","Mex")),
                     mapcol='darkgray', maplwd=1/2,
                     halo=FALSE, hcolor="white", hwidth=2,
+                    arrowcol="contrast",
                     spacing=c(1,1,1,1)/20, cbhi=0,
                     margi=c(2,3,5,3,2,2)/8, uniti=1/8,
                     ...){
@@ -240,7 +245,8 @@ gridmap <- function(x, y, z,
             v <- facets[[f,"raster"]]
 #            v <- facets$raster[[f]]
 #            image(x, y, z[m,v,,], zlim=zlims[[v]], col=cmaps[[v]],
-            image(x, y, z[C,v,,], zlim=zlims[[v]], col=cmaps[[v]],
+            zz <- z[C,v,,]
+            image(x, y, zz, zlim=zlims[[v]], col=cmaps[[v]],
                   xaxt='n', yaxt='n', ann=FALSE, ...)
 #            if(m==mods[1]) title(v, line=1, cex=2, xpd=NA)
 #            if(m==mods[nm]) axis(1)
@@ -254,6 +260,18 @@ gridmap <- function(x, y, z,
                             hcol=ifelse(halo, hcolor, NA),
                             hlwd=ifelse(halo, hwidth, NA))
             mapply(halomap, dbs, regs, MoreArgs=mapargs)
+
+            if(!is.null(facets[[f,"vector"]])){
+                if(arrowcol == "contrast") {
+                    amap <- bwcontrast(cmaps[[v]])[zz * 254/max(zz)+1]
+                } else {
+                    amap <- arrowcol
+                }
+                
+                uu <- z[C,facets[[f,"vector"]][1],,]
+                vv <- z[C,facets[[f,"vector"]][2],,]
+                vectorfield(x, y, uu, vv, length=0.02, col=amap)
+            }
         }
     }
 #    mtext(mods, side=2, outer=TRUE, line=0.5, at=(nm:1 - 1/2)/nm)

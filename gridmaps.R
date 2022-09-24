@@ -106,7 +106,7 @@ facets <- as.data.frame(
 dev.new(width=7, height=11)
 #gridmap(clon, clat, abind(uaconus$baseline[ocf], along=0)[,"A850",,,drop=FALSE],
 gridmap(clon, clat, maydata, facets["qflux",], cmaps=climap, units=uaunits,
-        main="May moisture advection", mapcol="black", halo=TRUE)
+        main="May moisture advection", mapcol="black")
 
 
 
