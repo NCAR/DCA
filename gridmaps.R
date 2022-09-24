@@ -90,7 +90,7 @@ facets <- as.data.frame(
         title   = list(
             qflux  = "850-mb moisture flux",
             hicirc = "250-mb wind + 500-mb geopotential",
-            p700   = "700-mb temperature & geopotential")
+            p700   = "700-mb temperature + geopotential")
     )
 )
 

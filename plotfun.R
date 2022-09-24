@@ -242,7 +242,7 @@ gridmap <- function(x, y, z,
             zz <- z[C,v,,]
             image(x, y, zz, zlim=zlims[[v]], col=cmaps[[v]],
                   xaxt='n', yaxt='n', ann=FALSE, ...)
-            if(C==cases[1]) title(v, line=1, cex=2, xpd=NA)
+            if(C==cases[1]) title(facets[[f,"title"]], line=1, cex=2, xpd=NA)
             if(C==cases[nc])            axis(1)
             if(f==rownames(facets)[nf]) axis(4)
 
@@ -253,16 +253,26 @@ gridmap <- function(x, y, z,
             mapply(halomap, dbs, regs, MoreArgs=mapargs)
 
             ## add arrows if vector variables defined
-            if(!is.null(facets[[f,"vector"]])){
+            if(!is.null(uv <- facets[[f,"vector"]])){
                 if(arrowcol == "contrast") {
-                    amap <- bwcontrast(cmaps[[v]])[zz * 254/max(zz)+1]
+#                    amap <- bwcontrast(cmaps[[v]])[zz * 254/max(zz)+1]
+                    amap <- bwcontrast(cmaps[[v]])[unitize(zz)*255]
+                    cat(C, f, range(unitize(zz)*255), table(bwcontrast(cmaps[[v]])), "\n")
                 } else {
                     amap <- arrowcol
                 }
                 
-                uu <- z[C,facets[[f,"vector"]][1],,]
-                vv <- z[C,facets[[f,"vector"]][2],,]
+                uu <- z[C,uv[1],,]
+                vv <- z[C,uv[2],,]
                 vectorfield(x, y, uu, vv, col=amap, fatten=fatten)
+            }
+
+            ## add contours if contour variable defined
+            if(!is.null(cv <- facets[[f,"contour"]])){
+                ## aim for multiples of 50/100, not 20
+                lev <- pretty(zlims[[cv]], u5.bias=5)
+                contour(x, y, z[C,cv,,], add=TRUE, method="edge", lwd=2,
+                        levels = lev, col="white", labcex=0.8, vfont=c("sans serif", "bold"))
             }
         }
     }
@@ -348,6 +358,8 @@ vectorfield <- function(x, y, u, v, fatten=FALSE, length=0.015, lwd=par()$lwd, .
 
 ## creates a colormap that is black where cmap is light and white
 ## where it's dark.
+
+## TODO: figure out why all values of brewer.spectral cmap have V > 0.5
 
 bwcontrast <- function(cmap){
     val <- (col2rgb(cmap) |> rgb2hsv())[3,]
