@@ -104,10 +104,45 @@ TODO
 
 # calculate anomaly by bucket
 # gridmaps: may climatology (baseline + bucketized)
-gridmaps: may anomaly (baseline + bucketized)
-layout A & B: plot = bucket, row = method & vice-versa
-all x o,c,f
+# gridmaps: may anomaly (baseline + bucketized)
+# layout A & B: plot = bucket, row = method & vice-versa
+# all x o,c,f
 
+gridmap sub-function args as lists with do.call
+vectorfield / quiver plot: colorized trianges, scale w/ value
+	theta = 30, max scale = 95%, offset = 1 - 1/sqrt(2)
+	poly() + rotation matrix
+
+dot plots for SGP - changes in precip
+    (w/ uncertainty, somehow?)
+
+wrangling: look for Melissa data on glade / campaign
+	Can-Can - can use if we change UA vars to CORDEX standard?
+
+other regions:
+      	Phoenix
+	Yakima river basin *
+      	Tuolumnee river basin *
+      	Upper CO r.b. @ Cameo CO *
+		* just pick a few points w/ good obs
+	upwind/downwind of mountain	
+
+surface data
+	- don't extract into point files
+	- write R code to pull from full files
+	(eventually iterate over domain to look for hotspots)
+
+	write scripts to generate derived on the fly
+		raw
+	     	shuffle
+		simple bc (theta + scale)
+		KDDM?
+		MBCn?
+		GLM
+	general buckets: dry / < 50 %ile / 50 %ile
+
+
+current vs future intsp
 
 # PCA on daily may anomalies
 varimax rotation on modes
@@ -147,11 +182,6 @@ run over all CONUS gridcells?
 get util.R .checkargs() to work
 
 
-other regions:
-      Yakima river basin
-      Tuolumnee river basin
-      Upper CO r.b. @ Cameo CO
-      Phoenix
 
 -------------------
 
