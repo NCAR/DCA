@@ -154,6 +154,16 @@ distplots <- function(x, y, xylim=narange(x,y),
 ## fatten=2 makes arrows up to 3x the basic lwd, and fatten=-1/2 makes
 ## short arrows thick and long arrows thin.
 
+## @param alen: arrowhead length (default 0.015)
+
+## @param concol: color for contours (default: white)
+
+## @param conlwd: line width for contours (default: 2)
+
+## @param concex: cex (absolute) for contour labels (default: 0.8)
+
+## @param pointargs: a list of arguments to points() added to each panel
+
 ## @param spacing: spacing between gridded map panels, in inches.
 
 ## @param cbhi: adjustment to height of the colorbar, in inches.
@@ -180,10 +190,13 @@ gridmap <- function(x, y, z,
                     regs=list(".", c("Can","Mex")),
                     mapcol='darkgray', maplwd=1/2,
                     halo=FALSE, hcolor="white", hwidth=2,
-                    arrowcol="contrast", fatten=FALSE,
+                    arrowcol="contrast", fatten=FALSE, alen=0.015,
+                    concol="white", conlwd=2, concex=0.8,
+                    pointargs=NULL,
                     spacing=c(1,1,1,1)/20, cbhi=0,
                     margi=c(2,3,5,3,2,2)/8, uniti=1/8,
                     ...){
+
     
     ## fill in any missing defaults
 
@@ -257,25 +270,30 @@ gridmap <- function(x, y, z,
                 if(arrowcol == "contrast") {
 #                    amap <- bwcontrast(cmaps[[v]])[zz * 254/max(zz)+1]
                     amap <- bwcontrast(cmaps[[v]])[unitize(zz)*255]
-                    cat(C, f, range(unitize(zz)*255), table(bwcontrast(cmaps[[v]])), "\n")
+#                    cat(C, f, range(unitize(zz)*255), table(bwcontrast(cmaps[[v]])), "\n")
                 } else {
                     amap <- arrowcol
                 }
                 
                 uu <- z[C,uv[1],,]
                 vv <- z[C,uv[2],,]
-                vectorfield(x, y, uu, vv, col=amap, fatten=fatten)
+                vectorfield(x, y, uu, vv, col=amap, fatten=fatten, length=alen)
             }
 
             ## add contours if contour variable defined
             if(!is.null(cv <- facets[[f,"contour"]])){
                 ## aim for multiples of 50/100, not 20
                 lev <- pretty(zlims[[cv]], u5.bias=5)
-                contour(x, y, z[C,cv,,], add=TRUE, method="edge", lwd=2,
-                        levels = lev, col="white", labcex=0.8, vfont=c("sans serif", "bold"))
+                contour(x, y, z[C,cv,,], add=TRUE, method="edge", lwd=conlwd,
+                        levels = lev, col=concol, labcex=concex,
+                        vfont=c("sans serif", "bold"))
+            }
+            if(!is.null(pointargs)){
+                do.call(points, pointargs)
             }
         }
     }
+    
     mtext(cases, side=2, outer=TRUE, line=0.5, at=(nc:1 - 1/2)/nc)
     mtext(main, side=3, line=2, outer=TRUE)
     
