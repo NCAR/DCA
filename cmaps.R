@@ -27,7 +27,7 @@ anomap <- list(
     U850=brewer.piyg(N),
     V850=brewer.puor(N),
     Q850=brewer.brbg(N),
-    T700=brewer.rdbu(N),
+    T700=rev(brewer.rdbu(N)),
     Z700=brewer.spectral(N),
     Z500=brewer.spectral(N),
     U250=brewer.piyg(N),
