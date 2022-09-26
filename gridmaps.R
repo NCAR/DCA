@@ -76,18 +76,30 @@ clat <- lat[lat %within% yr]
 
 ocf <- c("obs","hist","rcp85")  ## plotting order
 
-dev.new(width=13.5, height=4)
+#dev.new(width=13.5, height=4)
+png(file=paste0(mplotdir,"/baseline.",mm,".png"),
+    width=13.5, height=4, units="in", res=120)
 
 basedata <- abind(uaconus$baseline[ocf], along=0, use.dnns=TRUE) |>
     setname("period", "ndn")
 
+zerange <- function(x){c(0,max(x, na.rm=TRUE))}
+
+rtype <- c(U850=srange, V850=srange, Q850=zerange,
+           T700=narange, Z700=narange, Z500=narange,
+           U250=narange, V250=srange, A850=zerange)
+
+blim <- list(); for(v in vars){ blim[[v]] <- rtype[[v]](basedata[,v,,]) }
+
+
 main <- "MPI baseline  upper atmosphere annual climatology"
-gridmap(clon, clat, basedata, mapcol='black',
+gridmap(clon, clat, basedata, mapcol='black', zlims=blim,
         cmaps=climap, units=uaunits, main=main)
 
 
-dev.copy2pdf(file=paste0(mplotdir,"/baseline.",mm,".pdf"),
-             width=13.5, height=4, title=main)
+#dev.copy2pdf(file=paste0(mplotdir,"/baseline.",mm,".pdf"),
+#             width=13.5, height=4, title=main)
+dev.off()
 
 
 ## May moisture advection plot
@@ -108,14 +120,19 @@ facets <- as.data.frame(
 )
 
 
-dev.new(width=14, height=9)
+#dev.new(width=14, height=9)
+png(file=paste0(mplotdir,"/advection.",mm,".png"), 
+    width=14, height=9, units="in", res=120)
+
+mlim <- list(); for(v in vars){ mlim[[v]] <- rtype[[v]](maydata[,v,,]) }
 
 main=paste(gcm, "upper atmosphere", mon, "climatology")
-gridmap(clon, clat, maydata, facets, cmaps=climap, units=uaunits,
-        main=main, mapcol="black")
+gridmap(clon, clat, maydata, facets, cmaps=climap, zlims=mlim,
+        units=uaunits, main=main, mapcol="black")
 
-dev.copy2pdf(file=paste0(mplotdir,"/advection.",mm,".pdf"),
-             width=14, height=9, title=main)
+#dev.copy2pdf(file=paste0(mplotdir,"/advection.",mm,".pdf"),
+#             width=14, height=9, title=main)
+dev.off()
 
 
 ## bucketized climatology
@@ -136,7 +153,7 @@ bconus <- rapply(bdata, crop, sub=bounds, how="replace", classes="array") |>
     rapply(calcA, how="replace", classes="array", Dim=3)
 
 ## symmetric z-ranges around zero
-blim <- apply(bconus$hist$delta, 3, srange, simplify=FALSE)
+slim <- apply(bconus$hist$delta, 3, srange, simplify=FALSE)
 
 
 ## short titles
@@ -147,16 +164,20 @@ bfacets$title <- c("850-mb Qflux", "700-mb T & Z", "high circul'n")
 ## all methods by bucket
 
 for(b in buckets){
-    dev.new(width=7, height=12)
+#    dev.new(width=7, height=12)
+    png(file=paste0(bplotdir,"/anom.bucket.",mm,".",b,".png"),
+        width=7, height=12, units='in', res=120)
+
     main <- paste(gcm, "UA", mon, b, "anomaly difference")
     ambb <- bconus$hist$delta[b,,,,]
 
-    gridmap(clon, clat, ambb, bfacets, cmaps=anomap, zlim=blim,
+    gridmap(clon, clat, ambb, bfacets, cmaps=anomap, zlims=slim,
             units=uaunits, mapcol='black', main=main, alen=0,
             arrowcol='darkgray', concol="darkgray", concex=0.6)
 
-    dev.copy2pdf(file=paste0(bplotdir,"/anom.bucket.",mm,".",b,".pdf"),
-             width=7, height=12, title=main)
+#    dev.copy2pdf(file=paste0(bplotdir,"/anom.bucket.",mm,".",b,".pdf"),
+#             width=7, height=12, title=main)
+    dev.off()
 }
 
 
@@ -166,15 +187,18 @@ for(b in buckets){
 testpt <- list(x=x, y=y, pch=23, col="black", bg="red")
 
 for(m in methods){
-    dev.new(width=14, height=9)
+#    dev.new(width=14, height=9)
+    png(file=paste0(bplotdir,"/anom.method.",mm,".",m,".png"),
+        width=14, height=9, units='in', res=120)
     main <- paste(gcm,"+",m, "UA", mon, "anomaly difference")
     abbm <- bconus$hist$delta[,m,,,]
 
-    gridmap(clon, clat, abbm, facets, cmaps=anomap, zlim=blim,
+    gridmap(clon, clat, abbm, facets, cmaps=anomap, zlims=slim,
             units=uaunits, mapcol='black', main=main, pointargs=testpt,
             arrowcol='dimgray', concol="dimgray", concex=0.8)
 
-    dev.copy2pdf(file=paste0(bplotdir,"/anom.method.",mm,".",m,".pdf"),
-                 width=14, height=9, title=main)
+#    dev.copy2pdf(file=paste0(bplotdir,"/anom.method.",mm,".",m,".pdf"),
+#                 width=14, height=9, title=main)
+    dev.off()
 }
 
