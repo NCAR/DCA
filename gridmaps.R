@@ -204,161 +204,46 @@ for(m in methods){
 
 
 
-#### A quick experiment: how hard it is to generate this kind of
-#### figure in ggplot2?  I should evaluate that before I dive into
-#### generalizing my gridplot function.
+## faceted approach using ggplot
 
 library(ggplot2)
 library(reshape2)  
-# library(paleteer)
 library(maps)
-
-## ggplot needs data in long dataframe format
-
-## data is ~6x bigger, but that's okay once we've distilled it down to
-## monthly data (~10 MB for bconus); might be a problem for daily data
-## (ua.Rdata = 2.9 GB)
-
-## basic raster plot
-
-hddf <- melt(bconus$hist$delta)
-
-q <- subset(hddf, bucket=="wet"& method=="raw" & var=="A850")
-u <- subset(hddf, bucket=="wet"& method=="raw" & var=="U850")
-v <- subset(hddf, bucket=="wet"& method=="raw" & var=="V850")
-
-ggplot(q, aes(x=lon, y=lat)) +
-    xlim(xr) + ylim(yr) +
-#    coord_map() + ## projects to mercator, very slow
-    coord_fixed() + ## square aspect ratio 
-    geom_tile(aes(fill=value)) + ## raster plot
-    scale_fill_gradientn(colors=anomap[["A850"]],
-                         limits=slim[["A850"]]) +
-    borders("state", xlim=xr, ylim=yr)+
-    borders("world",c("Can","Mex"), xlim=xr, ylim=yr) +  ## ugh, bad
-    theme(legend.position="bottom",
-          axis.title.x = element_blank(),
-          axis.title.y = element_blank())
-
-
-## (delta) advection plot
-## no arrows, just segments
-
 library(plyr)
-ahddf <- adply(bconus$hist$delta, c(1,2,4,5)) #c("bucket","method","lon","lat"))
+library(gridExtra)
 
 defactor <- function(x) {as.numeric(levels(x))[x]}
-ahddf$lon <- defactor(ahddf$lon)
-ahddf$lat <- defactor(ahddf$lat)
 
-rawet <- subset(ahddf, bucket=="wet" & method=="raw")
+## ggplot wants data in long format
+## it's 6x bigger, but not a problem at the monthly scale
 
-wscale <- min(diff(clon),diff(clat))/max(slim$U850, slim$V850)
-
-ggplot(rawet, aes(x=lon, y=lat)) +
-    xlim(xr) + ylim(yr) +
-    coord_fixed() + ## square aspect ratio 
-    geom_tile(aes(fill=A850)) + ## raster plot
-    scale_fill_gradientn(colors=anomap[["A850"]],
-                         limits=slim[["A850"]])+
-    borders("state", xlim=xr, ylim=yr, lwd=1/2)+
-    borders("world",c("Can","Mex"), xlim=xr, ylim=yr, lwd=1/2) + 
-    geom_segment(aes(xend=lon+U850*wscale, yend=lat+V850*wscale)) + ## arrows
-    theme(legend.position="bottom",
-          axis.title.x = element_blank(),
-          axis.title.y = element_blank())
-
-
-## first stab at gridding plots using facets
-
-ggplot(ahddf, aes(x=lon, y=lat)) +
-    xlim(xr) + ylim(yr) +
-    coord_fixed() + ## square aspect ratio 
-    geom_tile(aes(fill=A850)) + ## raster plot
-    scale_fill_gradientn(colors=anomap[["A850"]],
-                         limits=slim[["A850"]])+
-    borders("state", xlim=xr, ylim=yr, lwd=1/2)+
-    borders("world",c("Can","Mex"), xlim=xr, ylim=yr, lwd=1/2) + 
-    geom_segment(aes(xend=lon+U850*wscale, yend=lat+V850*wscale)) + ## arrows
-    theme(legend.position="bottom",
-          axis.title.x = element_blank(),
-          axis.title.y = element_blank()) +
-    facet_grid(vars(method), vars(bucket))
-
-
-
-## cut down to 3x4 for better visibility
-
-wscale <- min(diff(clon),diff(clat))/max(slim$U250, slim$V250)
-
-ggplot(subset(ahddf, method %in% methods[1:4]), aes(x=lon, y=lat)) +
-    xlim(xr) + ylim(yr) +
-    coord_fixed() + ## square aspect ratio 
-    geom_tile(aes(fill=Z500)) + ## raster plot
-    scale_fill_gradientn(colors=anomap[["Z500"]],
-                         limits=slim[["Z500"]])+
-    borders("state", xlim=xr, ylim=yr, lwd=1/8, col="black")+
-    borders("world",c("Can","Mex"), xlim=xr, ylim=yr, lwd=1/8, col="black") + 
-    geom_segment(aes(xend=lon+U250*wscale, yend=lat+V250*wscale)) +
-    theme(legend.position="bottom",
-          axis.title.x = element_blank(),
-          axis.title.y = element_blank()) +
-    facet_grid(vars(method), vars(bucket))
-
-
-
-## can we compose faceted columns using gridExtra?
-
-system.time(
 totclim <- abind(uaconus$totclim[ocf], along=0, use.dnns=TRUE) |>
-    setname("period", "ndn") |>
+     setname("period", "ndn") |>
     adply(c(1,3,4,5))
-)
 
+## we do need to convert lat & lon back to numeric
 totclim$lon <- defactor(totclim$lon)
 totclim$lat <- defactor(totclim$lat)
 
 rawmay <- subset(totclim, month=="May")
 
-qflux <- ggplot(rawmay, aes(x=lon, y=lat)) +
-    xlim(xr) + ylim(yr) +
-    coord_fixed() + ## square aspect ratio 
-    geom_tile(aes(fill=A850)) + ## raster plot
-    scale_fill_gradientn(colors=climap[["A850"]],
-                         limits=blim[["A850"]]) +
-    borders("state", xlim=xr, ylim=yr, lwd=1/8, col="black")+
-    borders("world",c("Can","Mex"), xlim=xr, ylim=yr, lwd=1/8, col="black") + 
-    geom_segment(aes(xend=lon+U850*wscale, yend=lat+V850*wscale)) +
-    theme(legend.position="bottom",
-          axis.title.x = element_blank(),
-          axis.title.y = element_blank(),
-          plot.title=element_text("850-mb moisture advection")) +
-    facet_grid(vars(period))
 
-hicirc <- ggplot(rawmay, aes(x=lon, y=lat)) +
-    xlim(xr) + ylim(yr) +
-    coord_fixed() + ## square aspect ratio 
-    geom_tile(aes(fill=Z500)) + ## raster plot
-    scale_fill_gradientn(colors=anomap[["Z500"]],
-                         limits=blim[["Z500"]])+
-    borders("state", xlim=xr, ylim=yr, lwd=1/8, col="black")+
-    borders("world",c("Can","Mex"), xlim=xr, ylim=yr, lwd=1/8, col="black") + 
-    geom_segment(aes(xend=lon+U250*wscale, yend=lat+V250*wscale)) +
-    theme(legend.position="bottom",
-          axis.title.x = element_blank(),
-          axis.title.y = element_blank(),
-          plot.title=element_text("500-mb geopotential & 250-mb winds")) +
-    facet_grid(vars(period))
+## wind polygons
 
+w850scale <- min(diff(clon),diff(clat))/max(mlim$U850, mlim$V850)
+w250scale <- min(diff(clon),diff(clat))/max(mlim$U250, mlim$V250)
 
-library(gridExtra)
+w850 <- with(rawmay, polyfield(U850, V850, lon, lat, scale=w850scale, pad=FALSE))
+w250 <- with(rawmay, polyfield(U250, V250, lon, lat, scale=w250scale, pad=FALSE))
 
-grid.arrange(qflux, hicirc, nrow=1)
+foo <- mapply(cbind, id=1:length(w250), w250, SIMPLIFY=FALSE) 
+bar <- do.call(rbind, foo)
+baz <- data.frame(id=1:nrow(rawmay), value=rawmay$Z500)
+buz <- merge(bar, baz, by=c("id"))
 
+ggplot(buz, aes(x=x, y=y, asp=1)) + 
+    geom_polygon(aes(fill=value, group=id))
 
-## Yeah, okay, I think that does what I want pretty easily.
-
-## can we re-use the base components?
 
 base <- ggplot(rawmay, aes(x=lon, y=lat)) +
     xlim(xr) + ylim(yr) +
@@ -374,7 +259,7 @@ qflux <- base +
     scale_fill_gradientn(colors=climap[["A850"]],
                          limits=blim[["A850"]]) +
     facet_grid(vars(period)) +
-    geom_segment(aes(xend=lon+U850*wscale, yend=lat+V850*wscale))
+    geom_segment(aes(xend=lon+U850*w850scale, yend=lat+V850*w850scale))
 
 
 hicirc <- base + 
@@ -382,7 +267,7 @@ hicirc <- base +
     scale_fill_gradientn(colors=anomap[["Z500"]],
                          limits=blim[["Z500"]])+
     facet_grid(vars(period)) +
-    geom_segment(aes(xend=lon+U250*wscale, yend=lat+V250*wscale))
+    geom_segment(aes(xend=lon+U250*w250scale, yend=lat+V250*w250scale))
 
 grid.arrange(qflux, hicirc, nrow=1)
 
