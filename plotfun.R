@@ -1,5 +1,6 @@
 library(maps)
 source("util.R")
+source("names.R")
 
 ## plot that uses symmetric ranges for both axes
 symplot <- function(xylim=narange(x, y), ...){
@@ -389,4 +390,58 @@ bwcontrast <- function(cmap){
 invertcmap <- function(cmap){
     (255 - col2rgb(cmap)) |> t() |> rgb(max=255)
 }
+
+
+
+## Create shapes rotated and scaled to match the vectors defined by u
+## and v.  Designed to create a field of triangles to visualize a wind
+## vectorfield on a regular grid, but the code is general.
+
+## @param u,v: vectors pointing in the x & y directions.  Shapes are
+## rotated to point in the atan2(u,v) direction and scaled to
+## sqrt(u^2+v^2).
+
+## @param x,y: locations of polygons
+
+## @param shape: a set of points forming a polygon.  The centroid of
+## the polygon is shifted to the origin before rotation.
+
+## @param scale: overall scaling factor applied to the results.
+
+## @param margin: adjustment to scale to keep polygons from touching.
+## Results are multiplied by scale*(1-margin).  Default 5%.
+
+## @param pad: if TRUE, add a row of NA values at the end of each
+## polygon, so you can do.call(rbind) the returned list into an array
+## you can feed to polygon().
+
+## @results: a list of x/y coordinate arrays for the polygons
+
+
+polyfield <- Vectorize(vectorize.args=c("u","v","x","y"), SIMPLIFY=FALSE,
+                       function(u, v, x=0, y=0,
+                                shape=list(x=c(0,1,0),y=c(0.1,0.5,0.9)),
+                                scale=1, margin=0.05, pad=TRUE){
+    a <- atan2(v, u)
+    mag <- sqrt(u^2 + v^2)
+
+    p <- do.call(cbind, shape) |> scale(center=TRUE, scale=FALSE)
+
+    rmat <- function(a){matrix(c(cos(a), -sin(a), sin(a), cos(a)),2,2)}
+    vadd <- function(z, x, y){t(t(z)+c(x,y))}
+
+    result <- (scale * (1-margin) * mag * (p %*% rmat(a))) |>    
+        vadd(x, y) |>
+            setname(c("x","y"),"col")
+    if(pad){result <- rbind(result, NA)}
+    return(result)
+})
+
+## uu <- cos(1:10*pi/5) * 1:10
+## vv <- sin(1:10*pi/5) * 1:10
+## xyr <- c(-10,10)
+## plot(uu,vv, xlim=xyr, ylim=xyr, pch=20)
+## segments(0,0,uu,vv)
+## tris <- polyfield(uu, vv, uu, vv, scale=1/2)
+## polygon(do.call(rbind, tris))
 
