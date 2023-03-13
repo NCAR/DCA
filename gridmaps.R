@@ -236,13 +236,14 @@ w250scale <- min(diff(clon),diff(clat))/max(mlim$U250, mlim$V250)
 w850 <- with(rawmay, polyfield(U850, V850, lon, lat, scale=w850scale, pad=FALSE))
 w250 <- with(rawmay, polyfield(U250, V250, lon, lat, scale=w250scale, pad=FALSE))
 
-foo <- mapply(cbind, id=1:length(w250), w250, SIMPLIFY=FALSE) 
+foo <- mapply(cbind, id=1:length(w850), w850, SIMPLIFY=FALSE) 
 bar <- do.call(rbind, foo)
-baz <- data.frame(id=1:nrow(rawmay), value=rawmay$Z500)
+baz <- data.frame(id=1:nrow(rawmay), value=rawmay$A850)
 buz <- merge(bar, baz, by=c("id"))
 
 ggplot(buz, aes(x=x, y=y, asp=1)) + 
-    geom_polygon(aes(fill=value, group=id))
+    geom_polygon(aes(fill=value, group=id))+
+    borders("state", xlim=xr, ylim=yr, lwd=1/8, col="black")
 
 
 base <- ggplot(rawmay, aes(x=lon, y=lat)) +

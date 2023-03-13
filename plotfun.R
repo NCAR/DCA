@@ -420,7 +420,7 @@ invertcmap <- function(cmap){
 
 polyfield <- Vectorize(vectorize.args=c("u","v","x","y"), SIMPLIFY=FALSE,
                        function(u, v, x=0, y=0,
-                                shape=list(x=c(0,1,0),y=c(0.1,0.5,0.9)),
+                                shape=list(x=c(0,1,0),y=c(0.2,0.5,0.8)),
                                 scale=1, margin=0.05, pad=TRUE){
     a <- atan2(v, u)
     mag <- sqrt(u^2 + v^2)

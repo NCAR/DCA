@@ -1,3 +1,6 @@
+#### LAST WORKING ON gridmaps.R
+
+
 GENERAL NOTES
 
 MPAS is unsynchronized, which explains why there's no signal.
@@ -97,10 +100,11 @@ TODO
 # bucket plots:
 # stacked barplot by method w/ o/c/f
 . unstacked "
-.iterate + gangplot
+. iterate + gangplot
 .	by method?  by month (calendar layout?)
+. >> use ggplot
 
-.gangplot: layout + function + f'n args
+# X use ggplot # .gangplot: layout + function + f'n args
 
 # calculate anomaly by bucket
 # gridmaps: may climatology (baseline + bucketized)
@@ -108,10 +112,9 @@ TODO
 # layout A & B: plot = bucket, row = method & vice-versa
 # all x o,c,f
 
-gridmap sub-function args as lists with do.call
-vectorfield / quiver plot: colorized trianges, scale w/ value
-	theta = 30, max scale = 95%, offset = 1 - 1/sqrt(2)
-	poly() + rotation matrix
+# ggplot instead X gridmap sub-function args as lists with do.call
+. vectorfield / quiver plot: colorized triangles
+. >> ggplot in progress
 
 dot plots for SGP - changes in precip
     (w/ uncertainty, somehow?)
@@ -128,6 +131,7 @@ other regions:
 	upwind/downwind of mountain	
 
 surface data
+	>> see code outline in extract.R
 	- don't extract into point files
 	- write R code to pull from full files
 	(eventually iterate over domain to look for hotspots)
@@ -139,13 +143,15 @@ surface data
 		KDDM?
 		MBCn?
 		GLM
-	general buckets: dry / < 50 %ile / 50 %ile
+	general buckets: dry / < 70 %ile / 70 %ile  (top tercile?)
+
 
 
 current vs future intsp
 
-# PCA on daily may anomalies
-varimax rotation on modes
+## Punting, no time
+# # PCA on daily may anomalies
+# varimax rotation on modes
 
 
 
@@ -162,21 +168,21 @@ mismatch days 3x3 barchart
 mismatch days anomaly gridmaps (subset by acceptable # days)
 
 
-ssim similarity matrix on may daily anomalies
-total = linear sum of SSIM for each variable
-also f(prec) [factor(bucket) = (0,1,2)/2?] as component of total?
-hclust on ssim matrix
-PCA based on ssim matrix?
-
-distributions of ssim by bucket mismatch
-
-
-see self-email for packages for SSIM, PCA, varimax
-
-
-
-add method: regression model(s?) using downscaleR
-run over all CONUS gridcells?
+## punting - no time
+# ssim similarity matrix on may daily anomalies
+# total = linear sum of SSIM for each variable
+# also f(prec) [factor(bucket) = (0,1,2)/2?] as component of total?
+# hclust on ssim matrix
+# PCA based on ssim matrix?
+#
+# distributions of ssim by bucket mismatch
+#
+#
+# see self-email for packages for SSIM, PCA, varimax
+#
+#
+# add method: regression model(s?) using downscaleR
+# run over all CONUS gridcells?
 
 
 get util.R .checkargs() to work
