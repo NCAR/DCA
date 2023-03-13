@@ -114,7 +114,7 @@ cvar <- function(x, dname){
 
 ## get values of z-array closest to target x & y coordinates
 nearest <- function(tx, ty, z, x=cvar(z, xname), y=cvar(z, yname),
-                    xname="lon", yname="lat", lon=TRUE){
+                    xname="lon", yname="lat", lonmod=TRUE){
     ## wrap lon values to 0:360
     if(lonmod){
         tx <- tx %% 360
