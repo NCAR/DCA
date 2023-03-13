@@ -23,20 +23,68 @@
 ## 
 ## [stub in extracting other vars]
 ## 
-## outline:
-## 
-## get paths (from config file? assumed folder structure w/ symlinks?)
-## 
-## open netcdf4 files
-## >> can I not read in the entire file, just the points?
-## 
+
+library(ncdf4)
+
+## for general use, this should be a command-line parameter
+basedir <- "/glade/work/mcginnis/DCA2/data/surface"
+
+obspath <- paste0(basedir, "/ERAI/gridMET/obs")
+
+
+gcms <- c("GFDL","HadGEM","MPI")
+dmethods <- c("raw","RegCM4","WRF","CNN","LOCA") ## dynamical methods
+periods <- c("hist", "rcp85")
+
+## for now, assume the following folder structure
+## ideally, this should go in a config file of some kind
+
+indirs <- expand.grid(basedir, gcms, dmethods, periods) |>
+    apply(1, paste, collapse='/')
+
+
+## this too should go into a config file / command arg
+
+vars <- c("pr", "prec")
+vpat <- "pr.*nc"
+
+
+infiles <- sapply(indirs, dir, pattern=vpat, full=TRUE)
+ 
+
+## open netcdf4 files without reading in everything
+## takes a little while, b/c it does read in dims & metadata
+nc <- lapply(infiles, nc_open)  ## readunlim=FALSE ?
+
+
+## Everything is already on NAM-22i grid and subset to periods of
+## interest, so this code is much simpler than it would need to be in
+## the general case.
+
+
 ## loop on locations, inputs [vars]
-## ingest timeseries
-## 
+
+## hack stub
+
+tlon <- -98
+tlat <- 36
+
+## get indexes corresponding to target location
+
+ilon <- which.min(abs((tlon %% 360) - (foo$dim$lon$vals %% 360)))
+ilat <- which.min(abs(tlat - foo$dim$lat$vals))
+
+
+## which variables are we ingesting?
+readme <- vars[vars %in% names(foo$var)]
+
+## ingest timeseries - dims go X-Y-Z-T
+timser <- ncvar_get(foo, readme, start=c(ilon, ilat, 1), count=c(1,1,-1))
+
 ## cleanup
 ## 	convert CNN NA to 0
 ## 	floor at zero
-## 	check units
+## 	check / convert units
 ## 	set obs values below trace to zero?
 ## 
 ## construct dataframe
