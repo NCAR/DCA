@@ -104,3 +104,31 @@ srange <- function(...){c(-1,1)*max(abs(narange(...)))}
 transpose <- function(x){
     do.call(rbind, x) |> t() |> split(1:length(x[[1]]))
 }
+
+
+## get coordinate variable values, when coordinate variable is stored
+## as array dimnames
+cvar <- function(x, dname){
+    as.numeric(dimnames(x)[[dname]])
+}
+
+## get values of z-array closest to target x & y coordinates
+nearest <- function(tx, ty, z, x=cvar(z, xname), y=cvar(z, yname),
+                    xname="lon", yname="lat", lon=TRUE){
+    ## wrap lon values to 0:360
+    if(lonmod){
+        tx <- tx %% 360
+        x <- x %% 360
+    }
+
+    if(tx < min(x) | tx > max(x) | ty < min(y) | ty > max (ty)){
+        stop("target coordinates are outside array coverage")
+    }
+    
+    ix <- which.min(abs(x - tx))
+    iy <- which.min(abs(y - ty))
+    asub(z, ix, xname) |> asub(iy, yname)
+}
+
+
+                                   
