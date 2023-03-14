@@ -19,12 +19,14 @@
 ## name
 ## gcm
 ## <one column per method: raw / rcm1 / rcm2 / cnn / loca / etc.>
+## hmm... wide (above) or long?  How do we handle different calendars?
 ## 
 ## 
 ## [stub in extracting other vars]
 ## 
 
 library(ncdf4)
+#source("time.R")
 
 ## for general use, this should be a command-line parameter
 basedir <- "/glade/work/mcginnis/DCA2/data/surface"
@@ -34,14 +36,21 @@ obspath <- paste0(basedir, "/ERAI/gridMET/obs")
 
 gcms <- c("GFDL","HadGEM","MPI")
 dmethods <- c("raw","RegCM4","WRF","CNN","LOCA") ## dynamical methods
-periods <- c("hist", "rcp85")
+scenarios <- c("hist", "rcp85")
 
 ## for now, assume the following folder structure
 ## ideally, this should go in a config file of some kind
 
-indirs <- expand.grid(basedir, gcms, dmethods, periods) |>
-    apply(1, paste, collapse='/')
+combos <- expand.grid(gcms, dmethods, scenarios)
+ids <- apply(combos, 1, paste, collapse='.') 
 
+rownames(combos) <- ids
+colnames(combos) <- c("gcm","method","scen")
+
+
+
+indirs <- paste0(basedir, '/', ids) |> gsub(pat='.', rep='/', fixed=TRUE)
+names(indirs) <- ids
 
 ## this too should go into a config file / command arg
 
@@ -61,32 +70,54 @@ nc <- lapply(infiles, nc_open)  ## readunlim=FALSE ?
 ## interest, so this code is much simpler than it would need to be in
 ## the general case.
 
+data <- list()
 
-## loop on locations, inputs [vars]
-
+## loop on locations, vars goes here
 ## hack stub
 
 tlon <- -98
 tlat <- 36
 
-## get indexes corresponding to target location
+for(id in ids){
 
-ilon <- which.min(abs((tlon %% 360) - (foo$dim$lon$vals %% 360)))
-ilat <- which.min(abs(tlat - foo$dim$lat$vals))
+    nci <- nc[[id]]
+    
+    ## get indexes corresponding to target location
+    ilon <- which.min(abs((tlon %% 360) - (nci$dim$lon$vals %% 360)))
+    ilat <- which.min(abs(tlat - nci$dim$lat$vals))
 
+    
+    ## which variables are we ingesting?
+    ivar <- vars[vars %in% names(nci$var)]
 
-## which variables are we ingesting?
-readme <- vars[vars %in% names(foo$var)]
+    ## ingest timeseries - dims go X-Y-Z-T
+    pr <- ncvar_get(nci, ivar, start=c(ilon, ilat, 1), count=c(1,1,-1))
 
-## ingest timeseries - dims go X-Y-Z-T
-timser <- ncvar_get(foo, readme, start=c(ilon, ilat, 1), count=c(1,1,-1))
+    ## cleanup
+    if(ivar %in% c("pr","prec")){
+        ## convert CNN NA to 0
+        if(combos[id,"method"] == "CNN"){
+            pr[is.na(pr)] <- 0
+        }
+        ## floor at zero
+        pr <- max(pr, 0)
 
-## cleanup
-## 	convert CNN NA to 0
-## 	floor at zero
-## 	check / convert units
-## 	set obs values below trace to zero?
-## 
+        ## check / convert units
+        if(nci$var[[ivar]]$units == "kg m-2 s-1"){
+            ## 1 kg H20 = 1 mm * 1 m^2, x sec/day gives mm/day
+            pr <- pr * 24 * 60 * 60  
+        }
+            
+        ## set obs values below trace to zero?
+        pr[pr < 0.254] <- 0
+    }
+
+    ## get & convert time to date
+    tt <- ncvar_get(nci, "time")
+    tunits <- nci$var$time$units
+
+    ## convert to ymd, 
+ 
 ## construct dataframe
 ## 
 ## create misc convenience variables (methods, perspan, etc.)
