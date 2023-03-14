@@ -18,15 +18,11 @@
 ## lat
 ## name
 ## gcm
-## <one column per method: raw / rcm1 / rcm2 / cnn / loca / etc.>
-## hmm... wide (above) or long?  How do we handle different calendars?
-## 
-## 
-## [stub in extracting other vars]
-## 
+## method
+
 
 library(ncdf4)
-#source("time.R")
+source("time.R")
 
 ## for general use, this should be a command-line parameter
 basedir <- "/glade/work/mcginnis/DCA2/data/surface"
@@ -100,7 +96,7 @@ for(id in ids){
             pr[is.na(pr)] <- 0
         }
         ## floor at zero
-        pr <- max(pr, 0)
+        pr <- pmax(pr, 0)
 
         ## check / convert units
         if(nci$var[[ivar]]$units == "kg m-2 s-1"){
@@ -113,13 +109,32 @@ for(id in ids){
     }
 
     ## get & convert time to date
-    tt <- ncvar_get(nci, "time")
-    tunits <- nci$var$time$units
 
-    ## convert to ymd, 
- 
-## construct dataframe
-## 
+    cftime <- ncvar_get(nci, "time")
+    cftime@units <- nci$dim$time$units
+    cftime@calendar <- nci$dim$time$calendar
+
+    dd <- cftime2ymd(cftime, "%Y-%m-%d")
+
+    ymd <- strsplit(dd, '-') |>
+      renest() |>
+        lapply(unlist) |>
+          lapply(as.numeric) |>
+            setname(c("year","month","day"))
+
+
+    data[[id]] <- data.frame(cbind(ymd, combos[id,], lon=tlon, lat=tlat, prec=pr))
+    cat(id, "\t")
+  }
+cat("\n")
+
+prec <- do.call(rbind, data)
+
+
+save(file="../prec.SGP.Rdata", prec)
+
+
+
 ## create misc convenience variables (methods, perspan, etc.)
 ## 
 ## save to file
