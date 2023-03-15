@@ -9,17 +9,16 @@
 ## output: a dataframe with extracted precip data for the location(s):
 ## 
 ## columns:
-## date "YYYY-MM-DD"
 ## year num
 ## month num
 ## day num
-## period (hist / rcp85 / (obs))
+## gcm (obs = ERAI)
+## method (obs = gridMET)
+## scen (obs = obs)
+## locname (e.g., SGP-100-36)
 ## lon
 ## lat
-## name
-## gcm
-## method
-
+## prec
 
 library(ncdf4)
 source("time.R")
@@ -146,36 +145,3 @@ prec <- do.call(rbind, data)
 
 
 save(file="../prec.SGP.Rdata", prec)
-
-
-## #####
-## 
-## Separately, we then also have a script to generate data for
-## statistical methods
-## 
-## Reads in a precip dataframe
-## Also wants corresponding obs dataframe
-## 
-## Some methods need other variables, either surface or UA
-## So probably need to run the above extraction with a different set of
-## inputs and variables
-## 
-## 
-## dummy:  shuffle data points by month
-## 
-## simple: by month & loc:
-## 	find threshold to match obs dry/wet ratio
-## 	     set values below threshold to 0
-## 	     (if too many dry, we're out of luck)
-## 	find mean (median?) value of obs wet days
-## 	     scale model wet days to match stat
-## 	apply same transformation to future data
-## 
-## kddm: by month & loc
-## 
-## MBCn: by month & loc (needs other surface vars)
-## 
-## GLM: by month & loc (needs UA vars for this loc)
-## ? https://github.com/SantanderMetGroup/downscaleR
-## Note: this is a perfect-prog downscaling method
-
