@@ -47,6 +47,7 @@ for(i in names(obits)){
   levels(combos[[i]]) <- c(levels(combos[[i]]), obits[i])
 }
 combos[obs,] <- obits
+ids <- c(ids, obs)
 
 indirs <- paste0(basedir, '/', ids) |> gsub(pat='.', rep='/', fixed=TRUE)
 names(indirs) <- ids
@@ -133,10 +134,10 @@ for(tlon in lons){
               lapply(as.numeric) |>
                 setname(c("year","month","day"))
     
-    
-        data[[id]] <- data.frame(cbind(ymd, combos[id,], locname,
-                                       lon=tlon, lat=tlat, prec=pr))
-        cat(id, "\t")
+        locid <- paste0(locname, ".", id)
+        data[[locid]] <- data.frame(cbind(ymd, combos[id,], locname,
+                                          lon=tlon, lat=tlat, prec=pr))
+        cat(id, " ")
       }
     cat("\n")
   }
