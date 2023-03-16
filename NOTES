@@ -196,3 +196,5 @@ NOTES
 MPI uses standard gregorian calendar *with* leap-days.
 WRF-MPI skips the leap days (365-day calendar).
 
+GCM surface data has been regridded to NAM-22i using ncremap with the
+"nco" algorithm, which is first-order conservative.
