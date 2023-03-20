@@ -76,7 +76,7 @@ qdm <- function(mdf, odf){
     result <- mdf
     result[result$scen == "hist","prec"] <- bc$mhat.c
     result[result$scen != "hist","prec"] <- bc$mhat.p
-    result$method <- "QDM"
+    result$method <- "qdm"
     return(result)
 }
 
@@ -118,7 +118,7 @@ sdprec <- lapply(pr[methods], do.call, what=rbind) |>
 
 dlev <- levels(prec$method)
 
-newlevs <- c(head(dlev, -1), "SDSM", methods, tail(dlev, 1))
+newlevs <- c(head(dlev, -1), methods, tail(dlev, 1))
 
 prec$method   <- factor(  prec$method, lev=newlevs)
 sdprec$method <- factor(sdprec$method, lev=newlevs)
