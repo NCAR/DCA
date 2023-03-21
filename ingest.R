@@ -155,7 +155,7 @@ load_all("~/climod")
 #
 
 indir <- "~/work/DCA2/data/upper"
-outdir <- "~/work/DCA2/data"
+outdir <- "~/work/DCA2/data/rdata"
 
 ## input files:
 ## indir/gcm/rcm/scen/
@@ -188,7 +188,6 @@ uameta <- gsub(pat=".*/", rep="", uafiles) |>
 
 uameta$p <- gsub('p','',uameta$plev)
 uameta$pvar <- paste0(uameta$var, uameta$p)
-stop()
 
 ## read in data from all files
 ncua <- lapply(uafiles, nc_ingest)
@@ -253,10 +252,16 @@ uameta <- subset(fullmeta, var=="Q", c(idcols,"span"))
 uameta$id <- apply(uameta[,idcols], 1, paste, collapse='.')
 rownames(uameta) <- NULL
 
-ua <- list()
+## R chokes trying to write out the entire list of arrays, so we put
+## each one into its own file.  However, we still wrap them each in a
+## list with its id as the element name, so that when you read them in
+## you can just concatenate them all to reconstruct the list.
+
 
 for(i in 1:nrow(uameta)){
 
+    ua <- list()
+    
     id <- uameta$id[i]
     cat(id, " ")
     idx <- apply(fullmeta[,idcols], 1, paste, collapse='.') == id
@@ -269,8 +274,13 @@ for(i in 1:nrow(uameta)){
 
     dimnames(ua[[id]])[[4]] <- cftime2ymd(uatime[[which(idx)[1]]])
     names(dimnames(ua[[id]]))[4] <- "date"
+
+    save(file=paste0(outdir,"ua.",id,".Rdata"), ua)
 }
 cat("\n")
+
+save(file=paste0(outdir,"ua.meta.Rdata"), uameta, uaunits,
+     lats, lat, lon, vars, idcols)
 
 
 #    ua[[p]] <- abind(var=uadata[uameta$period==p][vars], along=0, use.dnns=TRUE)
@@ -286,8 +296,6 @@ cat("\n")
 #}
 
 
-save(file=paste0(outdir,"/","ua.Rdata"), ua, uameta, uaunits,
-     lats, lat, lon, vars, idcols)
 
 ##testpt <- "x098.y36"
 
