@@ -90,11 +90,11 @@ uaunits <- sapply(uadata, `@`, "units")[vars]
 idcols <- c("gcm","rcm","scen")
 
 fullmeta <- uameta
+fullmeta$id <- apply(fullmeta[,idcols], 1, paste, collapse='.')
 
-uameta <- subset(fullmeta, var=="Q", c(idcols,"span"))
-#uameta$id <- apply(uameta[,idcols], 1, paste, collapse='.')
-#rownames(uameta) <- NULL
-rownames(uameta) <- apply(uameta[,idcols], 1, paste, collapse='.')
+uameta <- subset(fullmeta, var=="Q", c(idcols,"span","id"))
+rownames(uameta) <- uameta$id
+uameta <- uameta[,-5]
 
 ## R chokes trying to write out the entire list of arrays, so we put
 ## each one into its own file.  However, we still wrap them each in a
@@ -102,15 +102,13 @@ rownames(uameta) <- apply(uameta[,idcols], 1, paste, collapse='.')
 ## you can just concatenate them all to reconstruct the list.
 
 
-#for(i in 1:nrow(uameta)){
 for(id in rownames(uameta)){
 
     ua <- list()
     
-    id <- uameta$id[i]
     cat(id, " ")
-    idx <- apply(fullmeta[,idcols], 1, paste, collapse='.') == id
-       
+    idx <- fullmeta$id == id
+    
     ua[[id]] <- abind(var=uadata[idx][vars], along=0, use.dnns=TRUE)
                                 
     names(dimnames(ua[[id]]))[1] <- "var"
@@ -124,6 +122,6 @@ for(id in rownames(uameta)){
 }
 cat("\n")
 
-save(file=paste0(outdir,"ua.meta.Rdata"), uameta, uaunits,
+save(file=paste0(outdir,"/ua.meta.Rdata"), uameta, uaunits,
      lats, lat, lon, vars, idcols)
 
