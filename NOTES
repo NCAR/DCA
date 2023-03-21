@@ -9,31 +9,50 @@ If there's no synchrony, it can't fit into this framework...
 -------------
 SCRIPTS
 
-1) ingest.R generates:
+1) ingest.R converts converts upper-atmosphere netcdf files to arrays
 
-data/prec.Rdata				# precip data
+run on casper with 25 GB (check) memory, execcasper --mem 25GB
+takes about 45 minutes (file output is slooooooowww)
 
-gcm
-methods[]
-periods[]
-perspan[]  ## string "YYYY-YYYY"
-prec$period[method,px,py,day,month,year]
-px[]
-py[]
+Each array gets its own file, because otherwise IO chokes, but they're
+wrapped in lists, so you can concatenate them together.
 
 
-data/ua.Rdata				# MPI upper atmosphere data
+output:
+data/rdata/ua.gcm.rcm.scen.Rdata	# upper atmosphere data
 
-gcm
+ua$id[var, lon, lat, date]		# date dim named YYYY-Mon-DD
+
+
+data/rdata/ua.meta.Rdata		# accompanying metadata
+
 lats[]					# string-formatted; 2 decimals
 lat[]
 lon[]
-periods[]
-perspan[]
-ua$period[var,lon,lat,date]		# date dim named YYYY-Mon-DD
-uaunits
+idcols[]				# (gcm, rcm, scen)
+uameta[,c(idcols, span, id)]		# dataframe
+uaunits[]
 vars[]
 
+2) extract.R (run on casper) generates:
+
+data/prec.SGP.Rdata			# precip data
+
+prec					# long-format dataframe
+$year
+$month
+$day
+$gcm		# factor - levels GFDL HadGEM MPI ERA(obs)
+$method 	# factor - levels raw RegCM4 WRF CNN LOCA SDSM gridMET(obs)
+$scen		# factor - levels hist rcp85 obs
+$locname	# e.g., SGP-100-36
+$lon
+$lat
+$prec		# floored at zero, values below trace set to 0.
+
+3) statdown.R generates
+
+data/prec/SGP.all.Rdata		
 
 2) bucket.R: 
 
