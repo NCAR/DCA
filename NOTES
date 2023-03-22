@@ -8,6 +8,7 @@ If there's no synchrony, it can't fit into this framework...
 
 -------------
 SCRIPTS
+-------------
 
 1) ingest.R converts converts upper-atmosphere netcdf files to arrays
 
@@ -30,11 +31,16 @@ lats[]					# string-formatted; 2 decimals
 lat[]
 lon[]
 idcols[]				# (gcm, rcm, scen)
-uameta[,c(idcols, span, id)]		# dataframe
+uameta[id, c(idcols, span)]		# dataframe
 uaunits[]
 vars[]
 
-2) extract.R (run on casper) generates:
+-------------
+
+2) extract.R pulls precip timeseries from netcdf files
+
+Run on casper - quick, but input datafiles are unwieldy to download
+
 
 data/prec.SGP.Rdata			# precip data
 
@@ -50,21 +56,33 @@ $lon
 $lat
 $prec		# floored at zero, values below trace set to 0.
 
-3) statdown.R generates
+-------------
 
-data/prec/SGP.all.Rdata		
+3) statdown.R adds statistical methods (qdm, simple (threshold+scale),
+dummy (shuffle) to dataframe from prec.SGP.Rdata.
 
-2) bucket.R: 
+data/prec/SGP.all.Rdata			# precip data w/ stat downscaling
 
-data/buckets.Rdata			# precip aggregated by amount
+-------------
+
+4) bucket.R maps precip to wet/moist/dry days & calculates stats
+
+-------------
+
+data/buckets.Rdata			# stats of precip aggregated by amount
 
 buckets					# dry / moist / wet
-bprec$period[[]]			# dataframe of bucketized precip
-	columns: date, year, month, day, period, px, py, <methods>
-bstat${count|pct}$period[[]]		# dataframe of bucket stats
-	columns: period, month, px, py, bucket, <methods>			
 theta					# 3 mm threshold
 trace					# 0.254 mm = 1/100" threshold
+bucketize()				# function mapping prec to bucket
+bstat					# long-format dataframe
+$month					# integer 1:12
+$gcm, method, scen			# factors, as above
+$locname, lon, lat			# as above
+$bucket	       				# factor
+$count, pct				# count & pctage of days by subset
+
+-------------
 
 
 3) anomaly.R:

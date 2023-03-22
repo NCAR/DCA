@@ -1,69 +1,39 @@
-load("data/prec.Rdata")
+load("data/prec.SGP.all.Rdata")
 source("names.R")
 
 buckets <- c("dry", "moist", "wet")
 trace <- 0.254
 theta <- 3
 
-
-## convert here to propagate through everything else
-
-for(p in periods){
-    prec[[p]]$month <- month.abb[prec[[p]]$month]
+bucketize <- function(x){
+    cut(x, breaks=c(0, trace, theta, Inf), labels = buckets, right=FALSE)
 }
 
-
-## categorize precip amounts
-
-pcut <- list()
-for(p in c("hist","rcp85")){
-    df <- prec[[p]][,-(1:7)]     #need to drop non-precip columns
-    pcut[[p]] <- lapply(df, cut, breaks=c(-Inf,trace,theta,Inf),
-                        labels=buckets, include.lowest=TRUE)
-}
-pcut[["obs"]] <- list(obs=cut(prec$obs$obs,
-                          breaks=c(-Inf,trace,theta,Inf),
-                          labels=buckets, include.lowest=TRUE))
-
-bprec <- mapply(cbind, lapply(prec, `[`, 1:7), pcut) |>
-    lapply('rownames<-', NULL)
-
-## Note: operating directly on columns -(1:7) (i.e., w/o intermediate
-## pcut & df) is orders of magnitude slower.
-
-
+prec$bucket <- bucketize(prec$prec)
+                   
 
 ## calculate stats by bucket
 
 percentage <- function(x){100*x/sum(x)}
 
-bstat <- list(count=list(), pct=list())
+same <- function(x){all(x == x[1])}
 
-for(p in periods){
-    ## split by month, px, py
-    psplit <- split(bprec[[p]], ~ px + py + month)
-
-    ## tabulate buckets
-    pcount <- lapply(psplit, `[`, -(1:7)) |>
-        lapply(apply, 2, table)
-
-    ## corresponding metadata
-    meta <- lapply(psplit, `[`, i=1:3, j=c("period","month","px","py"))
+calc <- function(df, column="bucket"){
+    keep <- apply(df, 2, same)
+    count <- table(df[[column]])
+    pct <- percentage(count)
     
-    ## stich 'em together.  (Note: exact form matters a lot here)
-    bstat$count[[p]] <- mapply(cbind, meta, bucket=list(buckets), pcount,
-                               SIMPLIFY=FALSE, USE.NAMES=FALSE,
-                               MoreArgs=list(row.names=NULL)) |>
-                                   do.call(what=rbind)
-
-    ## and do the same for percentages by bucket
-    ppct <- lapply(pcount, function(x){apply(x, 2, percentage)})
-
-    bstat$pct[[p]] <- mapply(cbind, meta, bucket=list(buckets), ppct,
-                               SIMPLIFY=FALSE, USE.NAMES=FALSE,
-                               MoreArgs=list(row.names=NULL)) |>
-                                   do.call(what=rbind)    
+    cbind(df[1,keep] |> setname(NULL, "row"),
+          data.frame(factor(names(count)), unclass(count), unclass(pct)) |>
+          setname(c(column, "count","pct"), "col")
+          ) |>
+        setname(NULL, "row")
 }
 
+#system.time(
+bstat <- split(prec, ~ month + gcm + method + scen + locname, drop=TRUE) |>
+    lapply(calc) |> do.call(what=rbind) |> setname(NULL, "row")
+#)
 
-save(file="data/buckets.Rdata", buckets, trace, theta, bprec, bstat)
+
+save(file="data/buckets.Rdata", buckets, trace, theta, bucketize, bstat)
