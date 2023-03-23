@@ -9,21 +9,10 @@ system(paste("mkdir -p", outdir))
 mnum <- paste0("m", sprintf("%02d",1:12))
 names(mnum) <- month.abb
 
-#methods <- levels(bstat$method)
-#nm <- length(methods)
 methods <- head(levels(bstat$method), -1)
 nm <- length(methods)
 
-
-## stacked barplots
-
-#for(x in px){
-#    for(y in py){
-#        for (m in month.abb){
-
-#x = "x098"
-#y = "y38"
-#m = "May"
+gcms <- c("HadGEM","MPI","GFDL")  ## ordered by ECS
 
 
 ## To get all 3 buckets on the same barchart, grouped and stacked,
@@ -39,18 +28,16 @@ mon = 5
 
 month <- month.abb[mon]
 
-gcms <- c("HadGEM","MPI","GFDL")
-
 
 #outname <- paste("bucket", "stackbar", x, y, mnum[m], sep='-')
 #outfile <- paste0(outdir, '/', outname, ".png")
-#png(outfile, units="in", res=120, height=5,width=8)
+#png(outfile, units="in", res=120, height=9, width=8)
 
-#
+
 dev.new(height=9,width=8)
 
 
-par(mar=c(1,4,2,0), mfrow=c(length(gcms),1), oma=c(4,0,4,2), cex.axis=1.2)
+par(mar=c(1,4,2,0), mfrow=c(length(gcms),1), oma=c(5,0,5,2), cex.axis=1.2)
 
 
 for(GCM in gcms){
@@ -81,7 +68,8 @@ barwidth <- c(3,1,3)
 
 bpx <- barplot(pctarr, ylim=c(0,100), width=barwidth, xaxt='n')
 if(GCM == tail(gcms,1)){
-    axis(side=1, las=3, labels=c("obs",methods), at=bpx[c(1, 1:nm*3)])
+    ax <- c(bpx[1], (bpx[1:nm*3] + bpx[1:nm*3 + 1])/2)
+    axis(side=1, las=3, labels=c("obs",methods), at=ax)
 }
 mtext("%", side=2, line=2)
 mtext(GCM, side=4, line=0)
@@ -101,20 +89,20 @@ for(s in names(gsbar)){
 
 }
 
-mtext(paste(month, "wet/dry days, ", loc), side=3, outer=TRUE, las=1, cex=1.5)
+mtext(paste(month, "wet/dry days, ", loc), side=3, outer=TRUE, las=1, cex=1.5, line=0.5)
 
-# 
-# ## little 3x3 legend
-# 
-# reset <- par(new=TRUE, fig=c(80,95,85,98)/100, mar=c(1,1,0,0))
-# legarr <-array(1:9, dim=c(3,3), dimnames=list(names(gsbar),buckets))
-# image(1:3, 1:3, legarr, col=unlist(bucketmap), axes=FALSE, ann=FALSE)
-# mtext(side=1, buckets, at=1:3, las=1, cex=2/3)
-# mtext(side=2, names(gsbar), at=1:3, las=2, cex=2/3, adj=1, line=0.5)
-# par(reset)
-# 
-# dev.off()
-#         }
-#     }
-# }
-# 
+ 
+ ## little 3x3 legend
+ 
+reset <- par(new=TRUE, fig=c(85,100,92,100)/100, mar=c(1,1,0,0), oma=c(0,0,1,2))
+legarr <-array(1:9, dim=c(3,3), dimnames=list(names(bucketmap),buckets))
+image(1:3, 1:3, legarr, col=unlist(bucketmap), axes=FALSE, ann=FALSE)
+mtext(side=1, buckets, at=1:3, las=1, cex=2/3)
+mtext(side=2, names(gsbar), at=1:3, las=2, cex=2/3, adj=1, line=0.5)
+par(reset)
+
+#dev.off()
+#}
+#}
+#}
+ 
