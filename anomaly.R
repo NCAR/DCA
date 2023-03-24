@@ -1,11 +1,13 @@
 ## Calculate climatology and anomalies by method, month, and bucket
 
-print(date())
-load("data/ua.Rdata")
-load("data/misc.Rdata")
-load("data/buckets.Rdata")
 source("names.R")
-print(date())
+
+
+#print(date())
+#load("data/ua.Rdata")
+#load("data/misc.Rdata")
+load("data/buckets.Rdata")
+load("data/prec.SGP.all.Rdata")
 
 ## What gets calculated:
 
@@ -21,157 +23,170 @@ print(date())
 
 ## delta: bucket anomaly minus total anomaly.  
 
-## N = 9 methods * 4 py * 5 px = 180
-
 ## Data size:
-## baseline[1], clim[12*3*N+12], anomaly = clim, delta=[12*3*N]
-## = 19k slices ~= 53 years of data for 8 variables.
 
-## Which is a lot if you don't need it all at once, so I'm going to
-## save data in separate files by location, month, & period.
+## 3 GCMs * 3 dynamical methods * 2 scenarios + ERAI = 18 runs + 1
+
+## 1 baseline per run
+## 12 months * 1 baseline = 12 total climatologies per run
+
+## 20 locs * 3 buckets * 3 gcms * 2 scenarios * 9 methods * 12 months
+## = 38880 bucket anomalies
+
+## 1 delta per bucket anomaly
+
+## ~= 100 years of data for 8 variables.
+
+## Which is a lot if you don't need it all at once, so we loop over
+## run, month, & location, and store things separately.  Files are
+## organized month/location/gcm/scen, and then within each directory
+## we have one file for each method.
+
+outroot <- "data/anom"
+#system(paste("mkdir -p", outroot))
+
+indir <- "data/rdata"
+infiles <- dir(indir, pattern="ua\\..*\\..*\\..*\\.Rdata")
+
+## non-statistical downscaling methods
+nonstat <- strsplit(infiles, '.', fixed=TRUE) |> sapply('[',3) |> unique()
+## statistical downscaling methods
+statmeth <- (function(x,y){x[!x %in% y]})(levels(prec$method), nonstat)
+
+mnum <- paste0("m", sprintf("%02d",1:12)) |> setname(month.abb)
+
+for(i in 1:length(infiles)){
+    #i=2
+
+    print(infiles[i])
+    load(paste0(indir,"/",infiles[i]))    # ~3 sec/file
+
+    ## unwrap list - don't use unlist(); it flattens to vector
+    id <- names(ua)
+    ua <- ua[[1]]
+
+    bits <- strsplit(id, '.', fixed=TRUE) |> unlist()
+    GCM <- bits[1] |> gsub(pat='-.*', rep='')  ## allcaps for subset(prec)
+    rcm <- bits[2]
+    scen <- bits[3]
+
+    ## baseline climatology: average over all time in period
+    ## ~5 sec /file
+    cat("baseline ")
+    baseline <- apply(ua, 1:3, mean, na.rm=TRUE)
 
 
+    # ## quick check:
+    # dev.new()
+    # par(mfrow=c(3,3))
+    # vars <- dimnames(ua)[[1]]
+    # for(v in vars) image(baseline[v,,],main=v)
+    # mtext("baseline", outer=TRUE, side=3, line=-1.5)
 
-## baseline climatology: average over all time in period
-## takes about a minute to run
+    ## indexing
+    dates <- dimnames(ua)$date
+    midx <- lapply(month.abb, grep, dates) |> setname(month.abb)
 
-#system.time(
-baseline <- lapply(ua, apply, 1:3, mean, na.rm=TRUE)
-#)
-print(date())
+    ## monthly total climatology: average over all days in each month and
+    ## across all years; ~5 sec/file
 
-# ## quick check:
-# dev.new()
-# par(mfrow=c(3,3))
-# for(v in vars) image(baseline$hist[v,,], main=v)
-# mtext("baseline", outer=TRUE, side=3, line=-1.5)
+    cat("clim ")
+    
+    totclim <- list()
 
-
-
-## empty var-lon-lat array for storing total data
-tdim <- dim(baseline[[1]])
-tdnm <- dimnames(baseline[[1]])
-tarr <- array(dim=tdim, dimnames=tdnm)
-
-## empty var-lat-lon-mon array for monthly data
-mdim <- c(tdim, 12)
-mdnm <- c(tdnm, list(month=month.abb))
-marr <- array(dim=mdim, dimnames=mdnm)
-
-## empty bucket-method-var-lat-lon array for clim/anom/delta data
-bdim <- c(length(buckets), length(methods), tdim)
-bdnm <- c(list(bucket=buckets, method=methods), tdnm)
-barr <- array(dim=bdim, dimnames=bdnm)
-
-
-## for indexing
-dates <- lapply(ua, dimnames) |> lapply(`[[`, "date")
-
-
-## monthly total climatology: average over all days in each month and
-## across all years in period; takes about a minute
-
-totclim <- list()
-
-#system.time(
-for(p in periods){
-    totclim[[p]] <- marr
     for(m in month.abb){
-        mind <- grep(m, dates[[p]])
-        totclim[[p]][,,,m] <- apply(ua[[p]][,,,mind], 1:3, mean, na.rm=TRUE)
+        totclim[[m]] <- apply(ua[,,,midx[[m]]], 1:3, mean, na.rm=TRUE)
     }
-}
-#)
-print(date())
-
-# ## quick check:
-# dev.new()
-# par(mfrow=c(3,4))
-# for(m in month.abb) image(totclim$obs["T700",,,m], main=m)
-# mtext("obs T700 monthly climatology", outer=TRUE, side=3, line=-1.5)
 
 
-
-## total monthly anomaly: monthly total climatology minus baseline
-
-totanom <- list()
-for(p in periods){
-    totanom[[p]] <- sweep(totclim[[p]], 1:3, baseline[[p]])
-}
-
-# ## quick check:
-# dev.new()
-# par(mfrow=c(3,3))
-# for(i in 1:8){
-#     v=vars[i]; m=month.abb[i]
-#     image(totanom$hist[v,,,m], main=paste(v,m))
-# }
-# mtext("hist total anomaly", outer=TRUE, side=3, line=-1.5)
+    # ## quick check:
+    # dev.new()
+    # par(mfrow=c(3,4))
+    # for(m in month.abb) image(totclim[[m]]["T700",,], main=m)
+    # mtext("T700 monthly climatology", outer=TRUE, side=3, line=-1.5)
 
 
+    ## total monthly anomaly: monthly total climatology minus baseline
 
-## save data to file & cleanup
+    cat(" anom")
+    totanom <- lapply(totclim, sweep, 1:3, baseline)
 
-outdir <- paste("data", gcm, "anom", sep='/')
-system(paste("mkdir -p", outdir))
+    ## quick check:
+    # dev.new()
+    # par(mfrow=c(12,8), mar=c(1,1,1,1)/2)
+    # for(m in month.abb){
+    #     for(v in vars){
+    #         image(totanom[[m]][v,,], xaxt='n', yaxt='n')
+    #     }
+    # }
 
-save(baseline, totclim, totanom, file=paste0(outdir,"/total.Rdata"))
-print(date())
 
+    dmethods <- if(rcm == "raw"){ c("raw", statmeth) } else { rcm }
 
-## some methods have missing data, which gives NA values in the subset indices
-dropna <- function(x){x[!is.na(x)]}
+    for(mon in "May"){
+#    for(mon in month.abb){
+        cat(mon, " ")
+        for(loc in "SGP-98-36"){
+#        for(loc in unique(prec$locname)){
+            cat(loc, " ")
 
-### Now calculate bucket climatology & anomalies
+            outdir <- paste(outroot, mnum[mon], loc, GCM, scen, sep='/')
+            system(paste("mkdir -p", outdir))
 
-## Takes 2-3 minutes per loop
-## Ran start to finish in a little under 2 hours
-## (with no other tasks on the machine.)
+            subprec <- subset(prec, locname==loc & scen==bits[3] &
+                                    month.abb[month]==mon & gcm==GCM)
 
-## skip obs b/c no ua data for it
+            mua <- ua[,,, grep(mon, dates)]
 
-for(p in setdiff(periods, "obs")){
-    cat('--------',p,'\n')
-    period = p                                                      ## for save file
-    for(x in px){
-        for(y in py){
-            loc <- paste(x, y, sep='.')                             ## for save file
-            cat(loc,'')
-            for(mon in month.abb){
-                mm <- grep(mon, month.abb) |> sprintf(fmt="m%02d")  ## for save file
-                cat(mon,'')
+            for(meth in dmethods){
+                cat(meth, " ")
+
+                ## TODO: if CNN & not MPI, need to drop leap days
                 
-                ## subset bucket dataframe for p / x / y / mon
-                with(bprec[[p]], sind <<- px==x & py == y & month == mon)
-                subdf <- bprec[[p]][sind,]            
-
-                ## storage for calculated results
-                clim <- anom <- delta <- barr
+                mprec <- subset(subprec, method==meth)
+                bprec <- bucketize(mprec$prec)
                 
-                for(meth in methods){
-                    for(b in buckets){
-                        mbdates <- subdf$date[subdf[[meth]]==b] |> dropna()
-                        subua <- ua[[p]][,,,mbdates[!is.na(mbdates)]]
+                ## bucket climatology
 
-                        ## barr[bucket, method, var, lat, lon]
-                        clim[b,meth,,,]  <- apply(subua, 1:3, mean)
-                        anom[b,meth,,,]  <- clim[b,meth,,,] - baseline[[p]]
-                        delta[b,meth,,,] <- anom[b,meth,,,] - totanom[[p]][,,,mon]
-                    }
+                bclim <- list()
+                for(b in buckets){
+                    bclim[[b]] <- apply(mua[,,,bprec==b], 1:3,
+                                        mean, na.rm=TRUE)
                 }
                 
-                ## save data
-                savedir <- paste(outdir, "sgp", loc, sep='/')
-                system(paste("mkdir -p", savedir))
-                filename <- paste(p, mm, loc, "Rdata", sep='.')
+                ## bucket anomaly (bclim - baseline)
+                banom <- lapply(bclim, sweep, 1:3, baseline)
                 
-                save(gcm, loc, mon, period, clim, anom, delta,
-                     file=paste0(savedir, '/', filename))
-            }
-            cat("\n")
-            print(date())
-        }
-    }
-}
+                ## delta (bucket anomaly - total anomaly)
+                delta <- lapply(banom, '-', totanom[[mon]])
 
-print(date())
+                #    ## quick check
+                #    dev.new()
+                #    par(mfcol=c(3,4))
+                #    v = "T700"
+                #    image(baseline[v,,], main="base")
+                #    image(totclim[[mon]][v,,], main="clim")
+                #    image(totanom[[mon]][v,,], main="amon")
+                #    for(b in buckets){
+                #        image(bclim[[b]][v,,], main=paste(b, "clim"))
+                #        image(banom[[b]][v,,], main=paste(b, "anom"))
+                #        image(delta[[b]][v,,], main=paste(b, "delta"))
+                #    }
+                
+                
+                ## save to file
+                outfile <- paste(meth,scen,GCM,loc,mnum[mon],"Rdata", sep='.')
+
+                upper <- list(mon = mon, loc=loc, gcm=GCM, scen=scen,
+                              baseline=baseline, clim=totclim[[mon]],
+                              anom=totanom[[mon]], bclim=bclim,
+                              banom=banom, delta=delta)
+
+                save(upper, file=paste0(outdir,"/",outfile))
+            }  # method
+        } # loc
+        cat("\n")
+    } # month
+    cat("\n")
+} # infile
+

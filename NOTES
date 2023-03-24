@@ -67,8 +67,6 @@ data/prec/SGP.all.Rdata			# precip data w/ stat downscaling
 
 4) bucket.R maps precip to wet/moist/dry days & calculates stats
 
--------------
-
 data/buckets.Rdata			# stats of precip aggregated by amount
 
 buckets					# dry / moist / wet
@@ -84,23 +82,18 @@ $count, pct				# count & pctage of days by subset
 
 -------------
 
+5) anomaly.R calculates climatology & anomalies by method/month/bucket
 
-3) anomaly.R:
+data/mon/loc/gcm/scen/method.scen.gcm.loc.mon.Rdata
 
-data/$gcm/anom/total.Rdata			# climatology/anomaly decompos'n
-
-baseline$period[var, px, py]			# average over all time
-totanom$period[var, px, py, month]		# climatology minus baseline
-totclim$period[var, px, py, month]		# avg over month across years
-
-data/$gcm/anom/sgp/$x.$y/$period.$month.$x.$y.Rdata
-anom[bucket,method,var,lon,lat]		# clim minus baseline
-clim[bucket,method,var,lon,lat]		# avg over month & bucket across years
-delta[bucket,method,var,lon,lat]	# anom minus totanom
-gcm
-loc
-mon
-period
+upper						# container object
+$mon, loc, gcm, scen
+$baseline[var,lon,lat]				# average over all time
+$clim[var,lon,lat]				# average over month across yrs
+$anom[var,lon,lat]				# clim - baseline
+$bclim$bucket[var,lon,lat]			# clim by bucket 
+$banom$bucket[var,lon,lat]			# bclim - baseline
+$delta$bucket[var,lon,lat]			# banom - anom
 
 
 -------------
