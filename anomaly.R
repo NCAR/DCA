@@ -1,11 +1,6 @@
 ## Calculate climatology and anomalies by method, month, and bucket
 
 source("names.R")
-
-
-#print(date())
-#load("data/ua.Rdata")
-#load("data/misc.Rdata")
 load("data/buckets.Rdata")
 load("data/prec.SGP.all.Rdata")
 
@@ -56,7 +51,6 @@ statmeth <- (function(x,y){x[!x %in% y]})(levels(prec$method), nonstat)
 mnum <- paste0("m", sprintf("%02d",1:12)) |> setname(month.abb)
 
 for(i in 1:length(infiles)){
-    #i=2
 
     print(infiles[i])
     load(paste0(indir,"/",infiles[i]))    # ~3 sec/file
@@ -172,13 +166,16 @@ for(i in 1:length(infiles)){
                 #        image(banom[[b]][v,,], main=paste(b, "anom"))
                 #        image(delta[[b]][v,,], main=paste(b, "delta"))
                 #    }
-                
-                
+
+                ## metadata (method, scen, GCM, loc, month) goes only
+                ## in filename so that contents of upper[[]] are
+                ## uniformly anomaly arrays, which is how we want to
+                ## interact with them in gridmaps.R
+                                
                 ## save to file
                 outfile <- paste(meth,scen,GCM,loc,mnum[mon],"Rdata", sep='.')
 
-                upper <- list(mon = mon, loc=loc, gcm=GCM, scen=scen,
-                              baseline=baseline, clim=totclim[[mon]],
+                upper <- list(baseline=baseline, clim=totclim[[mon]],
                               anom=totanom[[mon]], bclim=bclim,
                               banom=banom, delta=delta)
 
