@@ -65,7 +65,16 @@ data/prec/SGP.all.Rdata			# precip data w/ stat downscaling
 
 -------------
 
-4) bucket.R maps precip to wet/moist/dry days & calculates stats
+4) misc.R collates some useful vars from prec df
+
+data/rdata/misc.Rdata			# assorted useful vars
+
+gcms, scen, methods, dynmethods		# sorted by plotting order
+locs, plon, plat
+
+-------------
+
+5) bucket.R maps precip to wet/moist/dry days & calculates stats
 
 data/buckets.Rdata			# stats of precip aggregated by amount
 
@@ -82,7 +91,7 @@ $count, pct				# count & pctage of days by subset
 
 -------------
 
-5) anomaly.R calculates climatology & anomalies by method/month/bucket
+6) anomaly.R calculates climatology & anomalies by method/month/bucket
 
 data/mon/loc/gcm/scen/method.scen.gcm.loc.mon.Rdata
 
@@ -99,9 +108,11 @@ $delta$bucket[var,lon,lat]			# banom - anom
 -------------
 A) barplots.R				# barplots of bucket stats
 
+
 B) gridmaps.R				# gridmaps of UA anomalies
 
-C) eof.R				# PCA of UA
+
+# C) eof.R				# PCA of UA
 
 -------------
 
