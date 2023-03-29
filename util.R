@@ -135,4 +135,9 @@ nearest <- function(tx, ty, z, x=cvar(z, xname), y=cvar(z, yname),
 }
 
 
-                                   
+## load data into a list instead of the global environment
+listload <- function(filepath){
+    load(filepath, temp_env <- new.env())
+    as.list(temp_env)
+}
+
