@@ -278,7 +278,7 @@ gridmap <- function(x, y, z,
                 
                 uu <- z[C,uv[1],,]
                 vv <- z[C,uv[2],,]
-                vectorfield(x, y, uu, vv, col=amap, fatten=fatten, length=alen)
+                vectorfield(x, y, uu, vv, fatten=fatten, length=alen)
             }
 
             ## add contours if contour variable defined
