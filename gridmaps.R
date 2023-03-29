@@ -2,27 +2,28 @@
 
 library(abind)
 
-load("data/misc.Rdata")
-load("data/buckets.Rdata")
-load("plot/cmaps.Rdata")
 source("plotfun.R")
 source("names.R")
+source("~/climod/R/renest.R")
 
-plotdir <- "plot/upper"
-system(paste("mkdir -p", plotdir))
-
-## plotting limits
-#xr <- c(-150,-50)
-#yr <- c(15,65)
-xr <- c(-135,-55)
-yr <- c(20,60)
-bounds <- list(lon=xr, lat=yr)
 
 ## load data into a list instead of the global environment
 listload <- function(filepath){
     load(filepath, temp_env <- new.env())
     as.list(temp_env)
 }
+
+load("data/rdata/misc.Rdata")
+load("data/rdata/ua.meta.Rdata")
+load("plot/cmaps.Rdata")
+
+plotdir <- "plot/upper"
+system(paste("mkdir -p", plotdir))
+
+## plotting limits
+xr <- c(-135,-55)
+yr <- c(20,60)
+bounds <- list(lon=xr, lat=yr)
 
 
 ## calculate moisture advection
@@ -35,7 +36,34 @@ calcA <- function(arr, Dim=1){
     abind(arr, A850=a, along=Dim, use.dnns=TRUE)
 }
 
-total <- listload("data/MPI/anom/total.Rdata") |> rapply(calcA, how="replace")
+infiles <- dir("data/anom", rec=TRUE, full=TRUE)
+
+innames <- strsplit(infiles, '/')  |>
+    sapply(tail, 1) |>
+    gsub(pat=".Rdata", rep='')
+
+ameta <- strsplit(innames, '.', fixed=TRUE) |>
+    do.call(what=rbind) |>
+    data.frame() |>
+    setname(c("method","scen","gcm","loc","month")) |>
+    setname(innames, "row")
+
+## factors ordered for sorting
+ameta$scen <- factor(ameta$scen, levels=scen)#misc$scen)
+ameta$gcm   <- gsub("2","", ameta$gcm) |> factor(levels=gcms)#misc$gcms)
+ameta$method <- factor(ameta$method, levels=methods)#misc$method)
+
+ameta <- ameta[with(ameta, order(scen, gcm, method)),]
+
+## I should clean this data upstream, but don't have time
+clean <- function(x){x[abs(x)>1e20]<-NA; return(x)}
+
+anom <- lapply(infiles, listload) |>
+    lapply('[[',1) |>
+    setname(innames) |>
+    rapply(clean, how="replace") |>
+    rapply(calcA, how="replace") |>
+    renest()
 
 vars <- c(vars, "A850")
 uaunits["A850"] <- paste(uaunits["Q850"], uaunits["U850"])
@@ -44,96 +72,149 @@ uaunits["A850"] <- paste(uaunits["Q850"], uaunits["U850"])
 
 ## looping goes here
 
-x = -98
-y = 36
-xx = "x098"
-yy = "y36"
-mon = "May"
-mm = "m05"
+for(loc in unique(ameta$loc)){
+    for(mon in unique(ameta$month)){
 
-loc = paste0(xx, '.', yy)
+        mname <- month.abb[as.numeric(gsub('m','',mon))]
+#
+#x = -98
+#y = 36
+#xx = "x098"
+#yy = "y36"
+#mon = "May"
+#mm = "m05"
+#
+#loc = paste0(xx, '.', yy)
 
-mplotdir <- paste(plotdir, mm, sep='/')
-system(paste("mkdir -p", mplotdir))
-
-
-modper <- setdiff(periods, "obs")  ## no obs data for buckets
-
-suffix <- paste("",mm,xx,yy,"Rdata", sep=".")
-infiles <- paste0("data/",gcm,"/anom/sgp/",loc,"/",modper,suffix)
-
-bdata <- list()
-bdata <- lapply(infiles, listload) |> setname(modper)
+#mplotdir <- paste(plotdir, mm, sep='/')
+#system(paste("mkdir -p", mplotdir))
 
 
-## crop UA data to CONUS region so that plotted z-ranges are correct
+# modper <- setdiff(periods, "obs")  ## no obs data for buckets
+# 
+# suffix <- paste("",mm,xx,yy,"Rdata", sep=".")
+# infiles <- paste0("data/",gcm,"/anom/sgp/",loc,"/",modper,suffix)
+# 
+# bdata <- list()
+# bdata <- lapply(infiles, listload) |> setname(modper)
 
-uaconus <- rapply(total, crop, sub=bounds, how="replace")
-clon <- lon[lon %within% xr]
-clat <- lat[lat %within% yr]
+
+# ## crop UA data to CONUS region so that plotted z-ranges are correct
+# 
+# uaconus <- rapply(total, crop, sub=bounds, how="replace")
+# clon <- lon[lon %within% xr]
+# clat <- lat[lat %within% yr]
 
 ## baselines
 
-ocf <- c("obs","hist","rcp85")  ## plotting order
+        ## overall baseline: obs / hist GCMS x qflux, tz 700, highcirc
+        ## may climatology: ditto
+        ## may anomaly: by GCM, scen, delta colorbars
+        ## bucket anomaly: by GCM, scen; method x vars
+        ## delta: by GCM, scen; method x vars
+
+        
+#ocf <- c("obs","hist","rcp85")  ## plotting order
 
 #dev.new(width=13.5, height=4)
-png(file=paste0(mplotdir,"/baseline.",mm,".png"),
-    width=13.5, height=4, units="in", res=120)
+#png(file=paste0(mplotdir,"/baseline.",mm,".png"),
+#    width=13.5, height=4, units="in", res=120)
 
-basedata <- abind(uaconus$baseline[ocf], along=0, use.dnns=TRUE) |>
-    setname("period", "ndn")
+#basedata <- abind(uaconus$baseline[ocf], along=0, use.dnns=TRUE) |>
+#    setname("period", "ndn")
 
-zerange <- function(x){c(0,max(x, na.rm=TRUE))}
+        ## which anomalies to plot for baseline & clim
+        baseids <- rownames(ameta)[with(ameta, month==mon &
+                                               ( scen=="obs" |
+                                                 (scen=="hist" &
+                                                  method=="raw")))]
+        #                          method %in% dynmethods)))]
+        
+        gnames <- strsplit(baseids, '.', fixed=TRUE) |> sapply('[',3)
+        gnamelist <- list(gcm=gnames, var=NULL, lon=NULL, lat=NULL)
+        
+        ## bind data to be plotted into array[ens,var,lon,lat]
+        basedata <- abind(anom$baseline[baseids], along=0,
+                          use.dnns=TRUE, new.names=gnamelist)
 
-rtype <- c(U850=srange, V850=srange, Q850=zerange,
-           T700=narange, Z700=narange, Z500=narange,
-           U250=narange, V250=srange, A850=zerange)
+        ## range types
+        rtype <- c(U850=srange, V850=srange, Q850=zerange,
+                   T700=narange, Z700=narange, Z500=narange,
+                   U250=narange, V250=srange, A850=zerange)
 
-blim <- list(); for(v in vars){ blim[[v]] <- rtype[[v]](basedata[,v,,]) }
+        ## ranges
+        blim <- list()
+        for(v in vars){
+            blim[[v]] <- rtype[[v]](basedata[,v,,])
+        }
 
-
-main <- "MPI baseline  upper atmosphere annual climatology"
-gridmap(clon, clat, basedata, mapcol='black', zlims=blim,
-        cmaps=climap, units=uaunits, main=main)
+        main <- paste("Baseline (annual) upper atmosphere climatology,",
+                      "hist", loc)
+        gridmap(lon, lat, basedata, mapcol='black', zlims=blim,
+                cmaps=climap, units=uaunits, main=main)
 
 
 #dev.copy2pdf(file=paste0(mplotdir,"/baseline.",mm,".pdf"),
 #             width=13.5, height=4, title=main)
-dev.off()
+#dev.off()
 
 
-## May moisture advection plot
+## combined monthly climatology plot
 
-maydata <- abind(uaconus$totclim[ocf], along=0, use.dnns=TRUE)[,,,,"May"] |>
-    setname("period", "ndn")
+#maydata <- abind(uaconus$totclim[ocf], along=0, use.dnns=TRUE)[,,,,"May"] |>
+#    setname("period", "ndn")
 
-facets <- as.data.frame(
-    cbind(
-        raster  = list("A850",           "T700", "Z500"),
-        vector  = list(c("U850","V850"), NULL,   c("U250","V250")),
-        contour = list(NULL,             "Z700", NULL),
-        title   = list(
-            qflux  = "850-mb moisture advection",
-            p700   = "700-mb temperature + geopotential",
-            hicirc = "250-mb wind + 500-mb geopotential")
-    )
-)
+        mondata <- abind(anom$clim[baseids], along=0,
+                         use.dnns=TRUE, new.names=gnamelist)
+
+        mlim <- list()
+        for(v in vars){
+            mlim[[v]] <- rtype[[v]](mondata[,v,,])
+        }
+        
+        
+        facets <- as.data.frame(
+            cbind(
+                raster  = list("A850",           "T700", "Z500"),
+                vector  = list(c("U850","V850"), NULL,   c("U250","V250")),
+                contour = list(NULL,             "Z700", NULL),
+                title   = list(
+                    qflux  = "850-mb moisture advection",
+                    p700   = "700-mb temperature + geopotential",
+                    hicirc = "250-mb wind + 500-mb geopotential")
+            )
+        )
 
 
-#dev.new(width=14, height=9)
-png(file=paste0(mplotdir,"/advection.",mm,".png"), 
-    width=14, height=9, units="in", res=120)
+dev.new(width=12, height=12)
+#png(file=paste0(mplotdir,"/advection.",mm,".png"), 
+#    width=14, height=9, units="in", res=120)
 
-mlim <- list(); for(v in vars){ mlim[[v]] <- rtype[[v]](maydata[,v,,]) }
-
-main=paste(gcm, "upper atmosphere", mon, "climatology")
-gridmap(clon, clat, maydata, facets, cmaps=climap, zlims=mlim,
-        units=uaunits, main=main, mapcol="black")
+        main <- paste(mname, "upper atmosphere climatology,",
+                      "hist", loc)
+        gridmap(lon, lat, mondata, facets, cmaps=climap, zlims=mlim,
+                units=uaunits, main=main, mapcol="black")
 
 #dev.copy2pdf(file=paste0(mplotdir,"/advection.",mm,".pdf"),
 #             width=14, height=9, title=main)
-dev.off()
+# dev.off()
 
+        ## monthly anomaly vs baseline climatology
+
+        anomdata <- abind(anom$anom[baseids], along=0,
+                           use.dnns=TRUE, new.names=gnamelist)
+
+        alim <- list()
+        for(v in vars){
+            alim[[v]] <- srange(anomdata[,v,,])
+        }
+
+        main <- paste(mname, "upper atmosphere anomaly vs climatology,",
+                      "hist", loc)
+        gridmap(lon, lat, anomdata, facets, cmaps=anomap, zlims=alim,
+                units=uaunits, main=main, mapcol="black")
+        
+        
 
 ## bucketized climatology
 
@@ -143,15 +224,15 @@ dev.off()
 ## delta = bucket anomaly - total anomaly
 
     
-bplotdir <- paste(mplotdir, loc, sep='/')
-system(paste("mkdir -p", bplotdir))
+#bplotdir <- paste(mplotdir, loc, sep='/')
+#system(paste("mkdir -p", bplotdir))
 
-
-
-## crop UA data to CONUS & calculate q-flux
-bconus <- rapply(bdata, crop, sub=bounds, how="replace", classes="array") |>
-    rapply(calcA, how="replace", classes="array", Dim=3)
-
+#
+#
+### crop UA data to CONUS & calculate q-flux
+#bconus <- rapply(bdata, crop, sub=bounds, how="replace", classes="array") |>
+#    rapply(calcA, how="replace", classes="array", Dim=3)
+#
 ## symmetric z-ranges around zero
 slim <- apply(bconus$hist$delta, 3, srange, simplify=FALSE)
 
