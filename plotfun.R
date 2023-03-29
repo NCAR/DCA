@@ -347,12 +347,13 @@ halomap <- function(..., lwd=1, hlwd=2*lwd,
 
 ## @param lwd: line width for arrows
 
-## @param ...: additional arguments to pass to arrows().
-
 ## return: invisibly returns the scaling factor, in case you want to
 ## use it in a legend or something.
 
-vectorfield <- function(x, y, u, v, fatten=FALSE, length=0.015, lwd=par()$lwd, ...){
+## for some reason, passing ... along to arrows() when u/v has missing
+## data in it causes arrows not to plot, so we skip that.
+
+vectorfield <- function(x, y, u, v, fatten=FALSE, length=0.015, lwd=par()$lwd){
 
     nx <- length(x)
     ny <- length(y)
@@ -361,7 +362,7 @@ vectorfield <- function(x, y, u, v, fatten=FALSE, length=0.015, lwd=par()$lwd, .
     x2d <- rep(x, ny)      |> matrix(nx, ny)
     y2d <- rep(y, each=nx) |> matrix(nx, ny)
 
-    wscale <- mean(c(diff(x), diff(y))) / max(abs(range(c(u,v))))
+    wscale <- mean(c(diff(x), diff(y))) / max(abs(narange(c(u,v))))
     u2 <- u * wscale
     v2 <- v * wscale
 
@@ -369,7 +370,7 @@ vectorfield <- function(x, y, u, v, fatten=FALSE, length=0.015, lwd=par()$lwd, .
         lwd <- lwd * (1 + fatten * unitize(sqrt(u^2 + v^2)))
     }
     
-    arrows(x2d, y2d, x2d+u2, y2d+v2, lwd=lwd, length=length, ...)
+    arrows(x2d, y2d, x2d+u2, y2d+v2, lwd=lwd, length=length)
     invisible(wscale)
 }
 
