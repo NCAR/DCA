@@ -278,7 +278,8 @@ gridmap <- function(x, y, z,
                 
                 uu <- z[C,uv[1],,]
                 vv <- z[C,uv[2],,]
-                vectorfield(x, y, uu, vv, fatten=fatten, length=alen)
+                ## Need to fix arrow color -- col=amap
+                vectorfield(x, y, uu, vv, fatten=fatten, length=alen, col=amap)
             }
 
             ## add contours if contour variable defined
@@ -353,7 +354,8 @@ halomap <- function(..., lwd=1, hlwd=2*lwd,
 ## for some reason, passing ... along to arrows() when u/v has missing
 ## data in it causes arrows not to plot, so we skip that.
 
-vectorfield <- function(x, y, u, v, fatten=FALSE, length=0.015, lwd=par()$lwd){
+vectorfield <- function(x, y, u, v, fatten=FALSE, length=0.015,
+                        lwd=par()$lwd, col=2){
 
     nx <- length(x)
     ny <- length(y)
@@ -370,7 +372,7 @@ vectorfield <- function(x, y, u, v, fatten=FALSE, length=0.015, lwd=par()$lwd){
         lwd <- lwd * (1 + fatten * unitize(sqrt(u^2 + v^2)))
     }
     
-    arrows(x2d, y2d, x2d+u2, y2d+v2, lwd=lwd, length=length)
+    arrows(x2d, y2d, x2d+u2, y2d+v2, lwd=lwd, length=length, col=col)
     invisible(wscale)
 }
 
