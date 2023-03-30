@@ -25,7 +25,7 @@ for(loc in unique(bstat$locname)){
 
         month <- month.abb[mon]
 
-        outname <- paste("bucket", "stackbar", mnum[mon], loc, sep='-')
+        outname <- paste("bucket-stackbar", mnum[mon], loc, sep='.')
         outfile <- paste0(outdir, '/', outname, ".png")
         png(outfile, units="in", res=120, height=9, width=8)
 
