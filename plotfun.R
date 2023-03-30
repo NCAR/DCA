@@ -269,17 +269,15 @@ gridmap <- function(x, y, z,
             ## add arrows if vector variables defined
             if(!is.null(uv <- facets[[f,"vector"]])){
                 if(arrowcol == "contrast") {
-#                    amap <- bwcontrast(cmaps[[v]])[zz * 254/max(zz)+1]
                     amap <- bwcontrast(cmaps[[v]])[unitize(zz)*255]
-#                    cat(C, f, range(unitize(zz)*255), table(bwcontrast(cmaps[[v]])), "\n")
                 } else {
                     amap <- arrowcol
                 }
                 
                 uu <- z[C,uv[1],,]
                 vv <- z[C,uv[2],,]
-                ## Need to fix arrow color -- col=amap
-                vectorfield(x, y, uu, vv, fatten=fatten, length=alen, col=amap)
+                vectorfield(x, y, uu, vv, fatten=fatten,
+                            length=alen, col=amap)
             }
 
             ## add contours if contour variable defined
