@@ -60,7 +60,7 @@ for(i in 1:length(infiles)){
     ua <- ua[[1]]
 
     bits <- strsplit(id, '.', fixed=TRUE) |> unlist()
-    GCM <- bits[1] |> gsub(pat='-.*', rep='')  ## allcaps for subset(prec)
+    GCM <- bits[1] |> gsub(pat='2?-.*', rep='')  ## allcaps for subset(prec)
     rcm <- bits[2]
     scen <- bits[3]
 
