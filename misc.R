@@ -15,6 +15,9 @@ plon <- unique(bstat$lon)
 plat <- unique(bstat$lat)
 
 locmap <- unique(bstat[,c("locname","lon","lat")])
+rownames(locmap) <- locmap$locname
+locmap$locname <- NULL
+colnames(locmap) <- c("x","y")
 
 save(file="data/rdata/misc.Rdata", buckets, trace, theta,
      gcms, methods, dynmethods, scen, locs, plon, plat, locmap)
