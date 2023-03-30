@@ -81,7 +81,9 @@ clamp <- function(x, range=NULL, lower=-Inf, upper=Inf, na=NULL, nan=na){
 }
 
 ## rescale values to [0,1] range
-unitize <- function(x){(x - min(x)) / diff(range(x, finite=TRUE))}
+unitize <- function(x){
+    (x - min(x, na.rm=TRUE)) / diff(range(x, finite=TRUE))
+}
 
 
 ## range() with correct default for na.rm, which I get tired of typing.
