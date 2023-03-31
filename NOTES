@@ -106,6 +106,40 @@ $delta$bucket[var,lon,lat]			# banom - anom
 
 
 -------------
+DATA
+.	Redo RCM UA processing on casper & all downstream
+	Double-check HadGEM UA, no calendar issues
+.	roll back anom, only May & main loc
+
+BARPLOTS
+	move ablines on top, in red(?)
+	second plot, segregate hist & fut
+	       unloop, ditch other loc & month plots
+
+GRIDMAPS
+	add wet/dry frequency annotation
+	contour 250 windspeed instead of zg500 in 3rd panel
+		don't plot zg500
+		       update cmap, tho; delta zg red = higher
+		use colormap that highlights top end of range
+
+	Add RCM UA plots separate figure
+	banom plots boring, can be dropped
+	plot variance of UA vars (may climatology)
+	use same ranges for wet/dry/moist delta plots
+
+	change plots, future - current, for May clim, delta
+
+HACK / QQ PLOTS
+	formalize Q-Q plots, maybe gcm vs method plot too
+	HadGEM calendar: set May 31 to NA for downscalings
+	hit-miss / confusion matrix / disagreement viz
+	drop dummy from Q-Q
+	shift 0 values to show different methods
+	change qdm to not pink triangle (vs WRF red triangle)
+	
+
+
 A) barplots.R				# barplots of bucket stats
 
 
