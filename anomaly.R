@@ -118,7 +118,7 @@ for(i in 1:length(infiles)){
     dmethods <- if(rcm == "raw"){ c("raw", statmeth) } else { rcm }
 
     for(mon in "May"){
-#    for(mon in month.abb){
+#    for(mon in month.abb[-2]){
         cat(mon, " ")
         for(loc in "SGP-98-36"){
 #        for(loc in unique(prec$locname)){
