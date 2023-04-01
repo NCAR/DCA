@@ -107,14 +107,14 @@ $delta$bucket[var,lon,lat]			# banom - anom
 
 -------------
 DATA
-.	Redo RCM UA processing on casper & all downstream
+#	Redo RCM UA processing on casper & all downstream
 	Double-check HadGEM UA, no calendar issues
-.	roll back anom, only May & main loc
+#	roll back anom, only May & main loc
 
-BARPLOTS
-	move ablines on top, in red(?)
-	second plot, segregate hist & fut
-	       unloop, ditch other loc & month plots
+#BARPLOTS
+#	move ablines on top, in red
+#	second plot, segregate hist & fut
+#	       unloop, ditch other loc & month plots
 
 GRIDMAPS
 	add wet/dry frequency annotation
