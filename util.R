@@ -104,6 +104,13 @@ zerange <- function(x){c(0,max(x, na.rm=TRUE))}
 }
 
 
+## midpoints of vector values
+mids <- function(x){
+    stopifnot(all(x == sort(x)))
+    (head(x,-1) + tail(x,-1))/2
+}
+
+
 ## transpose row/column for list of vectors
 ## (i.e., get list by fields of strsplit output...)
 
