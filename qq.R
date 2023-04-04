@@ -6,14 +6,23 @@ source("names.R")
 load("data/prec.SGP.all.Rdata")
 load("data/buckets.Rdata")
 
+## TRUE = plot onscreen, FALSE = plot to file
+test = FALSE
+
+plotdir <- "plot/qq"
+system(paste("mkdir -p", plotdir))
+
+## looping goes here
 loc <- "SGP-98-36"
-
-
+mon <- 5
+mnum <- paste0("m",sprintf("%02d",mon))
+mname <- month.abb[mon]
+plotbase <- paste(mnum, loc, "png", sep='.') 
 
 modmethods <- levels(bstat$method) |> head(-2)  # drop dummy, gridMET
 
-obs <- subset(bstat, scen == "obs" & month == 5 & locname == loc)
-mod <- subset(bstat, scen != "obs" & month == 5 & locname == loc &
+obs <- subset(bstat, scen == "obs" & month == mon & locname == loc)
+mod <- subset(bstat, scen != "obs" & month == mon & locname == loc &
                      method %in% modmethods) |> droplevels()
 
 gcms <- levels(mod$gcm)
@@ -32,11 +41,12 @@ mpal <- bpal[cmap] |> setname(names(cmap))
 mpch <- c(raw=1, RegCM4=2, WRF=6, CNN=0, LOCA=5, SDSM=8, qdm=3,
           simple=4, dummy=20)
 
-## methods that have May 31 for values for HadGEM
-hasMay31 <- c("WRF","CNN","LOCA")
+## methods that have a value for the 31st of the month for HadGEM
+## (which we need to drop, since not everything has it)
+has31st <- c("WRF","CNN","LOCA")
 
-pr <- subset(prec, scen == "hist" & month == 5 & locname == loc) |>
-    subset(!(gcm=="HadGEM" & method %in% hasMay31 & day==31))
+pr <- subset(prec, scen == "hist" & month == mon & locname == loc) |>
+    subset(!(gcm=="HadGEM" & method %in% has31st & day==31))
 
 ## omit raw & gridMET
 downmethods <- levels(pr$method) |> head(-1) |> tail(-1)
@@ -52,21 +62,22 @@ qmethods <- tail(modmethods, -1)
 
 for(GCM in gcms){
 
-    dev.new()
-
+    if(test){
+        dev.new()
+    } else {
+        png(file=paste0(plotdir, '/qq.', GCM, '.', plotbase),
+            width=7, height=7, units='in', res=120)
+    }
+                
     p <- subset(pr, gcm==GCM)
     praw <- subset(p, method=="raw")$prec
-
-#    pbar <- (split(p, p$method) |> lapply('[[', "prec") |>
-#             sapply(mean)) |> head(-3)
-
     
-    plot(NA, log='xy', xlim=xyr, ylim=xyr, xlab="raw", ylab="method",
-         main=paste(GCM, "precip Q-Q plot (mm)"))
+    plot(NA, log='xy', xlim=xyr, ylim=xyr,
+         xlab="raw precip (mm)", ylab="method precip (mm)",
+         main=paste(GCM, mname, loc, "Q-Q plot"))
     
     abline(0,1)
     abline(h=theta, v=theta, col='gray', lty=1)
-#    abline(h=pbar, col=mpal[names(pbar)], lty=c(2, rep(3,length(pbar)-1)))
     
     for(m in rev(qmethods)){
         pmod <- subset(p, method==m)$prec
@@ -78,26 +89,26 @@ for(GCM in gcms){
            pch=c(mpch[qmethods], NA),
            col=c(mpal[qmethods],"gray"),
            lty=c(rep(NA,length(qmethods)), 1))
-#            c(qmethods,"raw", "mean", "3 mm"),
-#            pch=c(mpch[qmethods], rep(NA,3)),
-#            col=c(mpal[qmethods],"black", "gray", "gray"),
-#            lty=c(rep(NA,length(qmethods)), 2, 3, 1))
+    if(!test){
+        dev.off()
+    }
 }
+
 
 
 
 ##################
 ## confusion plots
 
-prconf <- subset(prec, scen != "obs" & month == 5 & locname == loc) |>
-    subset(!(gcm=="HadGEM" & method %in% hasMay31 & day==31)) |>
+prconf <- subset(prec, scen != "obs" & month == mon & locname == loc) |>
+    subset(!(gcm=="HadGEM" & method %in% has31st & day==31)) |>
     subset(!(scen=="rcp85" & year < 2076)) |>
     droplevels()
 
 prconf$bucket <- bucketize(prconf$prec)
 
 
-cbase <- subset(bstat, scen != "obs" & month == 5 & locname == loc,
+cbase <- subset(bstat, scen != "obs" & month == mon & locname == loc,
                 select=c("gcm","method","scen","bucket")) |>
     droplevels()
 
@@ -134,7 +145,12 @@ yr <- c(0, max(conf$pct)) * 100
 
 for(GCM in gcms){
 
-    dev.new()
+    if(test) {
+        dev.new()
+    } else {
+        png(file=paste0(plotdir, '/conf.',GCM,'.', plotbase),
+            width=7, height=7, units='in', res=120)
+    }
     par(mfrow=c(3,3), mar=c(1,3,1,1), oma=c(4,2,2,0))
     
     for(gb in buckets){
@@ -148,13 +164,18 @@ for(GCM in gcms){
                     density=c(0, 20), add=TRUE)
         }
     }
-    mtext(outer=TRUE, side=1, paste("GCM",buckets), at=c(1,3,5)/6)
-    mtext(outer=TRUE, side=2, paste("method",buckets), at=c(1,3,5)/6)
-    mtext(outer=TRUE, side=3, paste(GCM, "downscaling confusion matrix (%)"))
+    mpos <- c(1,3,5)/6
+    mtext(outer=TRUE, side=1, paste("GCM",buckets), at=mpos)
+    mtext(outer=TRUE, side=2, paste("method",buckets,"(% days)"), at=mpos)
+    mtext(outer=TRUE, side=3, paste(GCM, mname, loc,
+                                    "downscaling confusion matrix"))
 
     par(mfrow=c(1,1), oma=c(0,0,0,0), mar=c(0,0,0,0), new=TRUE)
     plot(NA, xaxt='n', yaxt='n', xlim=c(0,1), ylim=c(0,1), new=TRUE)
     legend("bottom", c(cmeth, "rcp85"), fill=c(mpal[cmeth], "gray"),
            density=c(rep(NA, nm), 20), ncol=length(cmeth)+1, cex=0.6)
 
+    if(!test){
+        dev.off()
+    }
 }
