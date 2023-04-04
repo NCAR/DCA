@@ -111,7 +111,7 @@ DATA
 	Double-check HadGEM UA, no calendar issues
 #	roll back anom, only May & main loc
 
-#BARPLOTS
+# BARPLOTS
 #	move ablines on top, in red
 #	second plot, segregate hist & fut
 #	       unloop, ditch other loc & month plots
@@ -130,14 +130,14 @@ GRIDMAPS
 
 	change plots, future - current, for May clim, delta
 
-HACK / QQ PLOTS
-	formalize Q-Q plots, maybe gcm vs method plot too
-	HadGEM calendar: set May 31 to NA for downscalings
-	hit-miss / confusion matrix / disagreement viz
-	drop dummy from Q-Q
-	shift 0 values to show different methods
-	change qdm to not pink triangle (vs WRF red triangle)
-	
+# HACK / QQ PLOTS
+#	formalize Q-Q plots, maybe gcm vs method plot too
+#	HadGEM calendar: set May 31 to NA for downscalings
+#	hit-miss / confusion matrix / disagreement viz
+#	drop dummy from Q-Q
+X	shift 0 values to show different methods
+#	change qdm to not pink triangle (vs WRF red triangle)
+	save to file
 
 
 A) barplots.R				# barplots of bucket stats
