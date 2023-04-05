@@ -10,10 +10,11 @@ source("~/climod/R/renest.R")
 load("data/rdata/misc.Rdata")
 load("data/rdata/ua.meta.Rdata")
 load("plot/cmaps.Rdata")
+load("data/buckets.Rdata")
 
 
 ## TRUE = plot onscreen, FALSE = plot to file
-test = TRUE
+test = FALSE
 
 plotdir <- "plot/upper"
 system(paste("mkdir -p", plotdir))
@@ -83,7 +84,8 @@ uaunits["S250"] <- uaunits["U250"]
 for(loc in unique(ameta$loc)){
     for(mon in unique(ameta$month)){
 
-        mname <- month.abb[as.numeric(gsub('m','',mon))]
+        mnum <- as.numeric(gsub('m','',mon))
+        mname <- month.abb[mnum]
 
         testpt <- c(locmap[loc,], list(pch=23, col="black", bg="red"))
 
@@ -221,6 +223,10 @@ for(loc in unique(ameta$loc)){
         for(v in vars){
             dlim[[v]] <- lapply(deltadata, \(x){srange(x[,v,,])}) |> range()
         }
+
+        bfreq <- subset(bstat, month == mnum & locname == loc &
+                               method %in% c("gridMET","raw") &
+                               scen %in% c("obs","hist"))
         
         
 #        for(b in buckets){
@@ -261,6 +267,8 @@ for(loc in unique(ameta$loc)){
 #                dlim[[v]] <- srange(deltadata[,v,,])
 #            }
 
+        
+        
         ## delta (bucket anom - month anom)
         for(b in buckets){
         
@@ -275,8 +283,14 @@ for(loc in unique(ameta$loc)){
 
             gridmap(lon, lat, deltadata[[b]], bfacets, cmaps=anomap,
                     zlims=dlim, units=uaunits, main=main,
-                    mapcol="black", pointargs=testpt,
+                    mapcol="black", pointargs=testpt, margi=c(2,5,5,3,2,2)/8,
                     arrowcol="darkgray", concol="darkgray", concex=0.6)
+
+            pct <- with(subset(bfreq, bucket==b), pct[match(gcm, gnames)]) |>
+                sprintf(fmt="%#.1f%% of days")
+            par(mfrow=c(1,1), oma=c(0,2,0,0))
+            mtext(pct, side=2, outer=TRUE, line=1/2, cex=0.8,
+                  at=(4:1*2-1)/9+0.07)
 
             if(!test){
                 dev.off()
