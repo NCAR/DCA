@@ -83,7 +83,7 @@ uaunits["S250"] <- uaunits["U250"]
 
 for(loc in unique(ameta$loc)){
     for(mon in unique(ameta$month)){
-
+        for(meth in dynmethods) {
         mnum <- as.numeric(gsub('m','',mon))
         mname <- month.abb[mnum]
 
@@ -92,7 +92,7 @@ for(loc in unique(ameta$loc)){
         if(!test){
             mplotdir <- paste(plotdir, mon, loc, sep='/')        
             system(paste("mkdir -p", mplotdir))
-            plotbase <- paste(mon, loc, "png", sep='.')
+            plotbase <- paste(meth, mon, loc, "png", sep='.')
         }
 
         
@@ -100,7 +100,8 @@ for(loc in unique(ameta$loc)){
         baseids <- rownames(ameta)[with(ameta, month==mon &
                                                ( scen=="obs" |
                                                  (scen=="hist" &
-                                                  method=="raw")))]
+                                                  method==meth)))]
+                                                  # method=="raw")))]
         #      method %in% dynmethods)))] # rcm ua currently broke
         
         gnames <- strsplit(baseids, '.', fixed=TRUE) |> sapply('[',3)
@@ -132,7 +133,8 @@ for(loc in unique(ameta$loc)){
                 width=15, height=5.5, units="in", res=120)
         }
         
-        main <- paste("Baseline (annual) upper atmosphere climatology,",
+        # main <- paste("Baseline (annual) upper atmosphere climatology,",
+        main <- paste(meth, "baseline upper atmosphere climatology,",
                       "hist", loc)
         gridmap(lon, lat, basedata, mapcol='black', zlims=blim,
                 cmaps=climap, units=uaunits, main=main)
@@ -170,7 +172,7 @@ for(loc in unique(ameta$loc)){
                 width=10, height=9, units="in", res=120)
         }
 
-        main <- paste(mname, "upper atmosphere climatology,",
+        main <- paste(meth, mname, "upper atmosphere climatology,",
                       "hist", loc)
         gridmap(lon, lat, mondata, facets, cmaps=climap, zlims=mlim,
                 units=uaunits, main=main, mapcol="black")
@@ -204,17 +206,18 @@ for(loc in unique(ameta$loc)){
 
         
         ## bucketized climatology
-        
-        ## bucket anomaly: by GCM, scen; method x vars
-        ## delta: by GCM, scen; method x vars
+        ## delta: by GCM, scen, method; method x vars
 
         ## short titles
         bfacets <- facets
         bfacets$title <- c("850-mb Qflux", "700-mb T & Z", "high circul'n")
 
+
+        #### TODO if(meth == "raw") loop on non-RCM methods
         
         ## all methods by bucket
 
+        #### TODO different baseids by method
         deltadata <- lapply(renest(anom$delta[baseids]), abind, along=0,
                                    use.dnns=TRUE, new.names=gnamelist)
 
@@ -225,48 +228,10 @@ for(loc in unique(ameta$loc)){
         }
 
         bfreq <- subset(bstat, month == mnum & locname == loc &
-                               method %in% c("gridMET","raw") &
+                               method %in% c("gridMET",meth) &
+#                               method %in% c("gridMET","raw") &
                                scen %in% c("obs","hist"))
         
-        
-#        for(b in buckets){
-#            ## bucket anomaly
-#            
-#            banomdata <- abind(renest(anom$banom[baseids])[[b]], along=0,
-#                      use.dnns=TRUE, new.names=gnamelist)
-#
-#            blim <- list()
-#            for(v in vars){
-#                blim[[v]] <- srange(banomdata[,v,,])
-#            }
-#
-#            if(test) {
-#                dev.new(width=10, height=9)
-#            } else {
-#                png(file=paste0(mplotdir,"/banom.", b, ".", plotbase),
-#                    width=10, height=9, units='in', res=120)
-#            }
-#    
-#            main <- paste(mname, "UA", b, "bucket anomaly,", "hist", loc)
-#    
-#            gridmap(lon, lat, banomdata, bfacets, cmaps=anomap,
-#                    zlims=blim, units=uaunits, main=main,
-#                    mapcol="black", arrowcol="darkgray", pointargs=testpt)
-#        
-#            if(!test){
-#                dev.off()
-#            }
-#            
-#            ## delta (bucket anom - month anom)
-#    
-#            deltadata <- abind(renest(anom$delta[baseids])[[b]], along=0,
-#                               use.dnns=TRUE, new.names=gnamelist)
-#
-#            dlim <- list()
-#            for(v in vars){
-#                dlim[[v]] <- srange(deltadata[,v,,])
-#            }
-
         
         
         ## delta (bucket anom - month anom)
@@ -279,7 +244,8 @@ for(loc in unique(ameta$loc)){
                     width=10, height=9, units='in', res=120)
             }
             
-            main <- paste(mname, "UA", b, "anomaly difference,", "hist", loc)
+            main <- paste(meth, mname, "UA", b, "anomaly difference,",
+                          "hist", loc)
 
             gridmap(lon, lat, deltadata[[b]], bfacets, cmaps=anomap,
                     zlims=dlim, units=uaunits, main=main,
@@ -296,6 +262,7 @@ for(loc in unique(ameta$loc)){
                 dev.off()
             }
         }
+        } ## meth
     }  ## mon
 }  ## loc
 
