@@ -118,17 +118,17 @@ DATA
 
 GRIDMAPS
 	add wet/dry frequency annotation
-	contour 250 windspeed instead of zg500 in 3rd panel
-		don't plot zg500
-		       update cmap, tho; delta zg red = higher
-		use colormap that highlights top end of range
+#	contour 250 windspeed instead of zg500 in 3rd panel
+#		don't plot zg500
+#		       update cmap, tho; delta zg red = higher
+#		use colormap that highlights top end of range
 
 	Add RCM UA plots separate figure
-	banom plots boring, can be dropped
+#	banom plots boring, can be dropped
 	plot variance of UA vars (may climatology)
 	use same ranges for wet/dry/moist delta plots
 
-	change plots, future - current, for May clim, delta
+	change plots: future - current, for May clim, delta
 
 # HACK / QQ PLOTS
 #	formalize Q-Q plots, maybe gcm vs method plot too
@@ -137,7 +137,7 @@ GRIDMAPS
 #	drop dummy from Q-Q
 X	shift 0 values to show different methods
 #	change qdm to not pink triangle (vs WRF red triangle)
-	save to file
+#	save to file
 
 
 A) barplots.R				# barplots of bucket stats

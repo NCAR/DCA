@@ -13,7 +13,7 @@ load("plot/cmaps.Rdata")
 
 
 ## TRUE = plot onscreen, FALSE = plot to file
-test = FALSE
+test = TRUE
 
 plotdir <- "plot/upper"
 system(paste("mkdir -p", plotdir))
@@ -33,6 +33,16 @@ calcA <- function(arr, Dim=1){
     a <- q * sqrt(u^2 + v^2)
     abind(arr, A850=a, along=Dim, use.dnns=TRUE)
 }
+
+## calculate wind speed
+calcS <- function(arr, Dim=1){
+    u <- asub(arr, "U250", Dim)
+    v <- asub(arr, "V250", Dim)
+    s <- sqrt(u^2 + v^2)
+    abind(arr, S250=s, along=Dim, use.dnns=TRUE)
+}
+
+
 
 infiles <- dir("data/anom", rec=TRUE, full=TRUE)
 
@@ -61,12 +71,12 @@ anom <- lapply(infiles, listload) |>   ##listload from util.R
     setname(innames) |>
     rapply(clean, how="replace") |>
     rapply(calcA, how="replace") |>
+    rapply(calcS, how="replace") |>
     renest()
 
-vars <- c(vars, "A850")
+vars <- c(vars, "A850", "S250")
 uaunits["A850"] <- paste(uaunits["Q850"], uaunits["U850"])
-
-
+uaunits["S250"] <- uaunits["U250"]
 
 ## looping goes here
 
@@ -104,7 +114,8 @@ for(loc in unique(ameta$loc)){
         ## range types
         rtype <- c(U850=srange, V850=srange, Q850=zerange,
                    T700=narange, Z700=narange, Z500=narange,
-                   U250=narange, V250=srange, A850=zerange)
+                   U250=narange, V250=srange, A850=zerange,
+                   S250=narange)
 
         ## ranges
         blim <- list()
@@ -113,10 +124,10 @@ for(loc in unique(ameta$loc)){
         }
 
         if(test) {
-            dev.new(width=13.5, height=5.5)
+            dev.new(width=15, height=5.5)
         } else {
             png(file=paste0(mplotdir,"/baseline.", plotbase),
-                width=13.5, height=5.5, units="in", res=120)
+                width=15, height=5.5, units="in", res=120)
         }
         
         main <- paste("Baseline (annual) upper atmosphere climatology,",
@@ -140,13 +151,13 @@ for(loc in unique(ameta$loc)){
         
         facets <- as.data.frame(
             cbind(
-                raster  = list("A850",           "T700", "Z500"),
+                raster  = list("A850",           "T700", "S250"),
                 vector  = list(c("U850","V850"), NULL,   c("U250","V250")),
                 contour = list(NULL,             "Z700", NULL),
                 title   = list(
                     qflux  = "850-mb moisture advection",
                     p700   = "700-mb temperature + geopotential",
-                    hicirc = "250-mb wind + 500-mb geopotential")
+                    hicirc = "250-mb wind speed + direction")
             )
         )
 
@@ -205,30 +216,30 @@ for(loc in unique(ameta$loc)){
         for(b in buckets){
             ## bucket anomaly
             
-            banomdata <- abind(renest(anom$banom[baseids])[[b]], along=0,
-                      use.dnns=TRUE, new.names=gnamelist)
-
-            blim <- list()
-            for(v in vars){
-                blim[[v]] <- srange(banomdata[,v,,])
-            }
-
-            if(test) {
-                dev.new(width=10, height=9)
-            } else {
-                png(file=paste0(mplotdir,"/banom.", b, ".", plotbase),
-                    width=10, height=9, units='in', res=120)
-            }
-    
-            main <- paste(mname, "UA", b, "bucket anomaly,", "hist", loc)
-    
-            gridmap(lon, lat, banomdata, bfacets, cmaps=anomap,
-                    zlims=blim, units=uaunits, main=main,
-                    mapcol="black", arrowcol="darkgray", pointargs=testpt)
-        
-            if(!test){
-                dev.off()
-            }
+#            banomdata <- abind(renest(anom$banom[baseids])[[b]], along=0,
+#                      use.dnns=TRUE, new.names=gnamelist)
+#
+#            blim <- list()
+#            for(v in vars){
+#                blim[[v]] <- srange(banomdata[,v,,])
+#            }
+#
+#            if(test) {
+#                dev.new(width=10, height=9)
+#            } else {
+#                png(file=paste0(mplotdir,"/banom.", b, ".", plotbase),
+#                    width=10, height=9, units='in', res=120)
+#            }
+#    
+#            main <- paste(mname, "UA", b, "bucket anomaly,", "hist", loc)
+#    
+#            gridmap(lon, lat, banomdata, bfacets, cmaps=anomap,
+#                    zlims=blim, units=uaunits, main=main,
+#                    mapcol="black", arrowcol="darkgray", pointargs=testpt)
+#        
+#            if(!test){
+#                dev.off()
+#            }
             
             ## delta (bucket anom - month anom)
     
