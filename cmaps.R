@@ -33,7 +33,7 @@ anomap <- list(
     U250=brewer.piyg(N),
     V250=brewer.puor(N),
     A850=brewer.brbg(N),
-    S250=rev(kovesi.rainbow_bgyrm_35_85_c71(N))
+    S250=ocean.delta(N)
     )
 
 ## brown-green-blue base colormap for precip buckets
