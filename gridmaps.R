@@ -212,10 +212,20 @@ for(loc in unique(ameta$loc)){
 
         
         ## all methods by bucket
+
+        deltadata <- lapply(renest(anom$delta[baseids]), abind, along=0,
+                                   use.dnns=TRUE, new.names=gnamelist)
+
         
-        for(b in buckets){
-            ## bucket anomaly
-            
+        dlim <- list()
+        for(v in vars){
+            dlim[[v]] <- lapply(deltadata, \(x){srange(x[,v,,])}) |> range()
+        }
+        
+        
+#        for(b in buckets){
+#            ## bucket anomaly
+#            
 #            banomdata <- abind(renest(anom$banom[baseids])[[b]], along=0,
 #                      use.dnns=TRUE, new.names=gnamelist)
 #
@@ -240,17 +250,20 @@ for(loc in unique(ameta$loc)){
 #            if(!test){
 #                dev.off()
 #            }
-            
-            ## delta (bucket anom - month anom)
-    
-            deltadata <- abind(renest(anom$delta[baseids])[[b]], along=0,
-                               use.dnns=TRUE, new.names=gnamelist)
+#            
+#            ## delta (bucket anom - month anom)
+#    
+#            deltadata <- abind(renest(anom$delta[baseids])[[b]], along=0,
+#                               use.dnns=TRUE, new.names=gnamelist)
+#
+#            dlim <- list()
+#            for(v in vars){
+#                dlim[[v]] <- srange(deltadata[,v,,])
+#            }
 
-            dlim <- list()
-            for(v in vars){
-                dlim[[v]] <- srange(deltadata[,v,,])
-            }
-
+        ## delta (bucket anom - month anom)
+        for(b in buckets){
+        
             if(test) {
                 dev.new(width=10, height=9)
             } else {
@@ -260,7 +273,7 @@ for(loc in unique(ameta$loc)){
             
             main <- paste(mname, "UA", b, "anomaly difference,", "hist", loc)
 
-            gridmap(lon, lat, deltadata, bfacets, cmaps=anomap,
+            gridmap(lon, lat, deltadata[[b]], bfacets, cmaps=anomap,
                     zlims=dlim, units=uaunits, main=main,
                     mapcol="black", pointargs=testpt,
                     arrowcol="darkgray", concol="darkgray", concex=0.6)
