@@ -10,16 +10,16 @@ tweak <- function(C, x){
 
 ## colormap for absolute variable values
 climap <- list(
-    U850=brewer.piyg(N),
-    V850=brewer.puor(N),
+    U850=rev(brewer.puor(N)),
+    V850=brewer.piyg(N),
     Q850=rev(cubehelix(N)),
     T700=inferno(N),
     Z700=rev(kovesi.diverging_rainbow_bgymr_45_85_c67(N)),
     Z500=brewer.spectral(N),
-#    U250=rev(viridis(N)),
-    U250=rev(parula(N)),
-    V250=brewer.puor(N),
-    A850=rev(cubehelix(N))
+    U250=parula(N),
+    V250=brewer.piyg(N),
+    A850=rev(cubehelix(N)),
+    S250=linearl(N)
     )  
 
 ## colormap for anomaly (zero-centered) variables
@@ -28,11 +28,12 @@ anomap <- list(
     V850=brewer.puor(N),
     Q850=brewer.brbg(N),
     T700=rev(brewer.rdbu(N)),
-    Z700=brewer.spectral(N),
-    Z500=brewer.spectral(N),
+    Z700=rev(brewer.spectral(N)),
+    Z500=rev(brewer.spectral(N)),
     U250=brewer.piyg(N),
     V250=brewer.puor(N),
-    A850=brewer.brbg(N)
+    A850=brewer.brbg(N),
+    S250=rev(kovesi.rainbow_bgyrm_35_85_c71(N))
     )
 
 ## brown-green-blue base colormap for precip buckets
