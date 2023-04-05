@@ -8,6 +8,7 @@ shift <- function(x){c(tail(x,1), head(x,-1))}
 gcms <- c("ERAI", "HadGEM", "MPI", "GFDL")  ## ECS ordering
 methods <- shift(levels(bstat$method))
 dynmethods <- c("raw","RegCM4","WRF")
+statmethods <- c("CNN", "LOCA", "SDSM", "qdm", "simple", "dummy")
 scen <- shift(levels(bstat$scen))
 
 locs <- unique(bstat$loc)
@@ -20,5 +21,6 @@ locmap$locname <- NULL
 colnames(locmap) <- c("x","y")
 
 save(file="data/rdata/misc.Rdata", buckets, trace, theta,
-     gcms, methods, dynmethods, scen, locs, plon, plat, locmap)
+     gcms, methods, dynmethods, statmethods,
+     scen, locs, plon, plat, locmap)
 

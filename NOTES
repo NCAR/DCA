@@ -126,8 +126,9 @@ GRIDMAPS
 #	banom plots boring, can be dropped
 #	use same ranges for wet/dry/moist delta plots
 #
-	Add RCM UA plots separate figure
-	    Iterate over statistical methods
+#	Add RCM UA plots separate figure
+#	    Iterate over statistical methods for delta plots
+
 	plot variance of UA vars (may climatology)
 	change plots: future - current, for May clim, delta
 
