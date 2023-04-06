@@ -96,7 +96,40 @@ for(i in grep("WRF", innames)){
 }
 
 
-## looping goes here
+################
+## Uniform scales for plotting
+
+## range types for abs vars
+rtype <- c(U850=srange, V850=srange, Q850=zerange, T700=narange, Z700=narange,
+           Z500=narange, U250=zerange, V250=srange, A850=zerange, S250=zerange)
+
+
+recrange <- function(x){
+    lapply(x, apply, 1, narange) |> do.call(what=rbind) |> apply(2,range)
+}
+
+temp <- c(renest(anom$bclim), anom[c("baseline","clim")]) |>
+    lapply(recrange) |> do.call(what=rbind) |> apply(2, range)
+
+abslim <- mapply(do.call, as.list(rtype), apply(temp, 2, list)) |>
+    as.data.frame() |> as.list()
+
+## override, b/c apparently there's an outlier somewhere:
+abslim$A850 <- c(0,60)
+
+#difflim <- c(renest(anom$delta), renest(anom$banom), list(anom$anom)) |> 
+#    lapply(recrange) |> do.call(what=rbind) |> apply(2, srange) |>
+#    as.data.frame() |> as.list()
+
+## HACK - need to separate current these more (current/future?) and I
+## don't have time to figure it out right now.  Hard-coding.
+
+deltalim  <- list(A850=c(-6,6),   T700=c(-2,2), S250=c(-10,10), Z700=c(-25,25))
+anomlim   <- list(A850=c(-12,12), T700=c(-5,5), S250=c(-12,12), Z700=c(0,60))
+changelim <- list(A850=c(-45,45), T700=c(-8,8), S250=c(-8,8),   Z700=c(30,80))
+
+#################
+## analysis loops
 
 for(loc in unique(ameta$loc)){
     testpt <- c(locmap[loc,], list(pch=23, col="black", bg="red"))
@@ -131,18 +164,6 @@ for(loc in unique(ameta$loc)){
             basedata <- abind(anom$baseline[baseids], along=0,
                               use.dnns=TRUE, new.names=gnamelist)
 
-            ## range types
-            rtype <- c(U850=srange, V850=srange, Q850=zerange,
-                       T700=narange, Z700=narange, Z500=narange,
-                       U250=narange, V250=srange, A850=zerange,
-                       S250=narange)
-
-            ## ranges
-            blim <- list()
-            for(v in vars){
-                blim[[v]] <- rtype[[v]](basedata[,v,,])
-            }
-
             ################
             ## baseline plot
 
@@ -155,7 +176,7 @@ for(loc in unique(ameta$loc)){
             
             main <- paste(meth, "baseline upper atmosphere climatology,",
                           "hist", loc)
-            gridmap(lon, lat, basedata, mapcol='black', zlims=blim,
+            gridmap(lon, lat, basedata, mapcol='black', zlims=abslim, #zlims=blim,
                     cmaps=climap, units=uaunits, main=main)
             
             if(!test){ dev.off() }
@@ -166,12 +187,8 @@ for(loc in unique(ameta$loc)){
             
             mondata <- abind(anom$clim[baseids], along=0,
                              use.dnns=TRUE, new.names=gnamelist)
-            
-            mlim <- list()
-            for(v in vars){
-                mlim[[v]] <- rtype[[v]](mondata[,v,,])
-            }
 
+            
             ###########
             ## combined monthly climatology plot
             
@@ -196,7 +213,7 @@ for(loc in unique(ameta$loc)){
 
             main <- paste(meth, mname, "upper atmosphere climatology,",
                           "hist", loc)
-            gridmap(lon, lat, mondata, facets, cmaps=climap, zlims=mlim,
+            gridmap(lon, lat, mondata, facets, cmaps=climap, zlims=abslim, #mlim,
                     units=uaunits, main=main, mapcol="black")
 
             if(!test) {dev.off()}
@@ -210,7 +227,7 @@ for(loc in unique(ameta$loc)){
             fnames <- strsplit(futids, '.', fixed=TRUE) |> sapply('[',3)
             fnamelist <- list(gcm=fnames, var=NULL, lon=NULL, lat=NULL)
 
-            ### future baseline
+            ### future baseline unused
             # futdata <- abind(anom$baseline[futids], along=0,
             #                 use.dnns=TRUE, new.names=fnamelist)
 
@@ -219,10 +236,6 @@ for(loc in unique(ameta$loc)){
 
             changedata <- futmondata[gcms[-1],,,] - mondata[gcms[-1],,,]
             
-            flim <- list()
-            for(v in vars){
-                flim[[v]] <- srange(changedata[,v,,])
-            }
             
             ###########
             ## monthly climatology change plot
@@ -236,7 +249,7 @@ for(loc in unique(ameta$loc)){
             
             main <- paste(meth, mname, "climatology change,", loc,",",
                           uameta$span[3],"vs", uameta$span[2])
-            gridmap(lon, lat, changedata, facets, cmaps=anomap, zlims=flim,
+            gridmap(lon, lat, changedata, facets, cmaps=anomap, zlims=changelim,
                     units=uaunits, main=main, mapcol="black",
                     arrowcol="darkgray")
             
@@ -250,11 +263,6 @@ for(loc in unique(ameta$loc)){
             anomdata <- abind(anom$anom[baseids], along=0,
                               use.dnns=TRUE, new.names=gnamelist)
 
-            alim <- list()
-            for(v in vars){
-                alim[[v]] <- srange(anomdata[,v,,])
-            }
-
             ##########
             ## monthly anomaly plot
 
@@ -267,7 +275,7 @@ for(loc in unique(ameta$loc)){
             
             main <- paste(meth, mname, "upper atmosphere anomaly vs climatology,",
                           "hist", loc)
-            gridmap(lon, lat, anomdata, facets, cmaps=anomap, zlims=alim,
+            gridmap(lon, lat, anomdata, facets, cmaps=anomap, zlims=anomlim,
                     units=uaunits, main=main, mapcol="black",
                     arrowcol="darkgray")
             
@@ -305,12 +313,6 @@ for(loc in unique(ameta$loc)){
                 deltadata <- lapply(renest(anom$delta[bbaseids]), abind,
                                     along=0, use.dnns=TRUE,
                                     new.names=gnamelist)
-                
-                dlim <- list()
-                for(v in vars){
-                    dlim[[v]] <- lapply(deltadata, \(x){srange(x[,v,,])}) |>
-                        range()
-                }
 
                 bfreq <- subset(bstat, month == mnum & locname == loc &
                                        method %in% c("gridMET", bmeth) &
@@ -331,7 +333,7 @@ for(loc in unique(ameta$loc)){
                                   "anomaly difference,", "hist", loc)
 
                     gridmap(lon, lat, deltadata[[b]], bfacets, cmaps=anomap,
-                            zlims=dlim, units=uaunits, main=main,
+                            zlims=deltalim, units=uaunits, main=main,
                             mapcol="black", pointargs=testpt,
                             arrowcol="darkgray", concol="darkgray",
                             margi=c(2,5,5,3,2,2)/8, concex=0.6)
@@ -351,6 +353,7 @@ for(loc in unique(ameta$loc)){
         } ## meth
     }  ## mon
 }  ## loc
+
 
 stop()
 
