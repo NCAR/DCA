@@ -99,12 +99,13 @@ for(i in grep("WRF", innames)){
 ## looping goes here
 
 for(loc in unique(ameta$loc)){
-    for(mon in unique(ameta$month)){
-        for(meth in dynmethods) {
-            mnum <- as.numeric(gsub('m','',mon))
-            mname <- month.abb[mnum]
+    testpt <- c(locmap[loc,], list(pch=23, col="black", bg="red"))
 
-            testpt <- c(locmap[loc,], list(pch=23, col="black", bg="red"))
+    for(mon in unique(ameta$month)){
+        mnum <- as.numeric(gsub('m','',mon))
+        mname <- month.abb[mnum]
+
+        for(meth in dynmethods) {
 
             if(!test){
                 mplotdir <- paste(plotdir, mon, loc, sep='/')        
@@ -123,7 +124,8 @@ for(loc in unique(ameta$loc)){
             gnamelist <- list(gcm=gnames, var=NULL, lon=NULL, lat=NULL)
 
             
-            ## baselines
+            ################
+            ## baseline climate
             
             ## bind data to be plotted into array[ens,var,lon,lat]
             basedata <- abind(anom$baseline[baseids], along=0,
@@ -141,6 +143,9 @@ for(loc in unique(ameta$loc)){
                 blim[[v]] <- rtype[[v]](basedata[,v,,])
             }
 
+            ################
+            ## baseline plot
+
             if(test) {
                 dev.new(width=15, height=5.5)
             } else {
@@ -156,8 +161,9 @@ for(loc in unique(ameta$loc)){
             if(!test){ dev.off() }
 
             
-            ## combined monthly climatology plot
-
+            ##########
+            ## monthly climatology
+            
             mondata <- abind(anom$clim[baseids], along=0,
                              use.dnns=TRUE, new.names=gnamelist)
             
@@ -165,7 +171,9 @@ for(loc in unique(ameta$loc)){
             for(v in vars){
                 mlim[[v]] <- rtype[[v]](mondata[,v,,])
             }
-            
+
+            ###########
+            ## combined monthly climatology plot
             
             facets <- as.data.frame(
                 cbind(
@@ -192,7 +200,51 @@ for(loc in unique(ameta$loc)){
                     units=uaunits, main=main, mapcol="black")
 
             if(!test) {dev.off()}
+            
+            ###########
+            ## monthly climatology change
 
+            futids <- rownames(ameta)[with(ameta, month==mon & scen=="rcp85" &
+                                                  method==meth)]
+
+            fnames <- strsplit(futids, '.', fixed=TRUE) |> sapply('[',3)
+            fnamelist <- list(gcm=fnames, var=NULL, lon=NULL, lat=NULL)
+
+            ### future baseline
+            # futdata <- abind(anom$baseline[futids], along=0,
+            #                 use.dnns=TRUE, new.names=fnamelist)
+
+            futmondata <- abind(anom$clim[futids], along=0,
+                             use.dnns=TRUE, new.names=fnamelist)
+
+            changedata <- futmondata[gcms[-1],,,] - mondata[gcms[-1],,,]
+            
+            flim <- list()
+            for(v in vars){
+                flim[[v]] <- srange(changedata[,v,,])
+            }
+            
+            ###########
+            ## monthly climatology change plot
+
+            if(test) {
+                dev.new(width=10, height=7)
+            } else {            
+                png(file=paste0(mplotdir,"/change.", plotbase),
+                    width=10, height=7, units="in", res=120)
+            }            
+            
+            main <- paste(meth, mname, "climatology change,", loc,",",
+                          uameta$span[3],"vs", uameta$span[2])
+            gridmap(lon, lat, changedata, facets, cmaps=anomap, zlims=flim,
+                    units=uaunits, main=main, mapcol="black",
+                    arrowcol="darkgray")
+            
+            if(!test){ dev.off() }
+
+            
+
+            ##########
             ## monthly anomaly vs baseline climatology
             
             anomdata <- abind(anom$anom[baseids], along=0,
@@ -203,6 +255,9 @@ for(loc in unique(ameta$loc)){
                 alim[[v]] <- srange(anomdata[,v,,])
             }
 
+            ##########
+            ## monthly anomaly plot
+
             if(test) {
                 dev.new(width=10, height=9)
             } else {            
@@ -210,7 +265,7 @@ for(loc in unique(ameta$loc)){
                     width=10, height=9, units="in", res=120)
             }
             
-            main <- paste(mname, "upper atmosphere anomaly vs climatology,",
+            main <- paste(meth, mname, "upper atmosphere anomaly vs climatology,",
                           "hist", loc)
             gridmap(lon, lat, anomdata, facets, cmaps=anomap, zlims=alim,
                     units=uaunits, main=main, mapcol="black",
@@ -218,9 +273,9 @@ for(loc in unique(ameta$loc)){
             
             if(!test){ dev.off() }
 
-            
+
+            #############
             ## bucketized climatology
-            ## delta: by GCM, scen, method; method x vars
 
             ## short titles
             bfacets <- facets

@@ -129,8 +129,8 @@ GRIDMAPS
 #	Add RCM UA plots separate figure
 #	    Iterate over statistical methods for delta plots
 
-	plot variance of UA vars (may climatology)
 	change plots: future - current, for May clim, delta
+	plot variance of UA vars (may climatology)
 
 # HACK / QQ PLOTS
 #	formalize Q-Q plots, maybe gcm vs method plot too
