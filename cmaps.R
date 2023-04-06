@@ -10,7 +10,7 @@ tweak <- function(C, x){
 
 ## colormap for absolute variable values
 climap <- list(
-    U850=rev(brewer.puor(N)),
+    U850=brewer.puor(N),
     V850=brewer.piyg(N),
     Q850=rev(cubehelix(N)),
     T700=inferno(N),
@@ -33,8 +33,9 @@ anomap <- list(
     U250=brewer.piyg(N),
     V250=brewer.puor(N),
     A850=brewer.brbg(N),
-    S250=ocean.delta(N)
-    )
+    S250=c(kovesi.linear_kryw_5_100_c67(N/2),
+           rev(kovesi.linear_bgyw_15_100_c67(N/2)))
+)
 
 ## brown-green-blue base colormap for precip buckets
 
