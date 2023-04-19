@@ -19,7 +19,7 @@ climap <- list(
     U250=parula(N),
     V250=brewer.piyg(N),
     A850=rev(cubehelix(N)),
-    S250=linearl(N)
+    S250=rev(cubehelix(N))
     )  
 
 ## colormap for anomaly (zero-centered) variables
