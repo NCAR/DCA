@@ -107,39 +107,21 @@ $delta$bucket[var,lon,lat]			# banom - anom
 
 -------------
 DATA
-#	Redo RCM UA processing on casper & all downstream
 	Double-check HadGEM UA, no calendar issues
-#	roll back anom, only May & main loc
-
-# BARPLOTS
-#	move ablines on top, in red
-#	second plot, segregate hist & fut
-#	       unloop, ditch other loc & month plots
+	WRF - divide zg upstream by 9.8 (gravity)
+		(convert geopotential to geopotential height)
+	calculate variance of UA variables
 
 GRIDMAPS
-#	add wet/dry frequency annotation
-#	contour 250 windspeed instead of zg500 in 3rd panel
-#		don't plot zg500
-#		       update cmap, tho; delta zg red = higher
-#		use colormap that highlights top end of range
-#
-#	banom plots boring, can be dropped
-#	use same ranges for wet/dry/moist delta plots
-#
-#	Add RCM UA plots separate figure
-#	    Iterate over statistical methods for delta plots
-
-	change plots: future - current, for May clim, delta
-	plot variance of UA vars (may climatology)
-
-# HACK / QQ PLOTS
-#	formalize Q-Q plots, maybe gcm vs method plot too
-#	HadGEM calendar: set May 31 to NA for downscalings
-#	hit-miss / confusion matrix / disagreement viz
-#	drop dummy from Q-Q
-X	shift 0 values to show different methods
-#	change qdm to not pink triangle (vs WRF red triangle)
-#	save to file
+	plot UA variance
+	stat summary of Q850 delta plots
+		zoom in on region: 4 corners states + equiv east
+		mask out same mountains in all runs
+		stats:
+		pattern correlation vs obs
+		MAE vs obs
+		other similarity metric, e.g. SSIM?
+			SpatialPack / spatialcompare pkgs
 
 
 A) barplots.R				# barplots of bucket stats
