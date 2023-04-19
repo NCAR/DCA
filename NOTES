@@ -110,7 +110,7 @@ DATA
 	Double-check HadGEM UA, no calendar issues
 	WRF - divide zg upstream by 9.8 (gravity)
 		(convert geopotential to geopotential height)
-	calculate variance of UA variables
+#	calculate variance of UA variables
 
 GRIDMAPS
 	plot UA variance
