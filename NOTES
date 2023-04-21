@@ -113,7 +113,7 @@ DATA
 #	calculate variance of UA variables
 
 GRIDMAPS
-	plot UA variance
+#	plot UA variance
 	stat summary of Q850 delta plots
 		zoom in on region: 4 corners states + equiv east
 		mask out same mountains in all runs

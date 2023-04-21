@@ -15,8 +15,14 @@ gsimp <- function(x){
 
 ## Ignoring buckets until we determine we need them
 
+
+## TRUE = plot onscreen, FALSE = plot to file
+test = FALSE
+
+
 outdir <- "data/var"
-system(paste("mkdir -p", outdir))
+plotdir <- "plot/upper"
+system(paste("mkdir -p", outdir, plotdir))
 
 indir <- "data/rdata"
 infiles <- dir(indir, pattern="ua\\..*\\..*\\..*\\.Rdata")
@@ -66,10 +72,6 @@ for(i in 1:length(infiles)){
 #    save(file=paste0(outdir,"/", outfile), monvar)
 }
 
-mon <- "May"
-
-vdata <- renest(vardata)[[mon]] |> lapply(sqrt)
-
 
 ## And now plot...
 
@@ -79,56 +81,73 @@ load("data/rdata/misc.Rdata")
 load("data/rdata/ua.meta.Rdata")
 load("plot/cmaps.Rdata")
 
-vmap <-list()
-for(v in vars){ vmap[[v]] <- cubicl(256)}
-
 vars <- c(vars, "A850", "S250")
 uaunits["A850"] <- paste(uaunits["Q850"], uaunits["U850"])
 uaunits["S250"] <- uaunits["U250"]
 
-## plotting limits
-xr <- c(-135,-55)
-yr <- c(20,60)
-bounds <- list(lon=xr, lat=yr)
 
+#for(m in 1:12){
+for(m in 5){
+    mnum <- sprintf("m%02d",m)
+    mon <- month.abb[m]
 
-vmeta <- strsplit(names(vdata), '.', fixed=TRUE) |>
-    do.call(what="rbind") |>
-    data.frame() |>
-    setname(c("gcm","method","scen")) |>
-    setname(names(vdata), "row")
-
-## factors ordered for sorting
-vmeta$scen   <- factor(vmeta$scen, levels=scen)
-vmeta$gcm    <- factor(vmeta$gcm, levels=gcms)
-vmeta$method <- factor(vmeta$method, levels=methods)
-
-vmeta <- vmeta[with(vmeta, order(scen, gcm, method)),]
-
-## plot ranges
-vlim <- lapply(vdata, apply, 1, narange) |>
-    abind(along=0) |> apply(3, zerange) |>
-    data.frame() |> as.list()
-
-
-for(meth in dynmethods){
-
-    ## which ones to plot
-    plotids <- rownames(vmeta)[with(vmeta, ( scen=="obs" |
-                                             (scen=="hist" &
-                                              method==meth)))]
+    mplotdir <- paste(plotdir, mnum, sep='/')
     
-    gnames <- strsplit(plotids, '.', fixed=TRUE) |> sapply('[',1)
-    gnamelist <- list(gcm=gnames, var=NULL, lon=NULL, lat=NULL)
+    vdata <- renest(vardata)[[mon]] |> lapply(sqrt)
 
-    plotdata <- abind(vdata[plotids], along=0, use.dnns=TRUE,
-                      new.names=gnamelist)
-    
-    dev.new(width=15, height=5.5)
-   
-    main <- paste(meth, "baseline upper atmosphere variance, hist")
-    gridmap(lon, lat, plotdata, mapcol='black', zlims=vlim,
-            cmaps=vmap, units=uaunits, main=main)
-    
+    vmap <-list()
+    for(v in vars){ vmap[[v]] <- cubicl(256)}
+
+    ## plotting limits
+    xr <- c(-135,-55)
+    yr <- c(20,60)
+    bounds <- list(lon=xr, lat=yr)
+
+
+    vmeta <- strsplit(names(vdata), '.', fixed=TRUE) |>
+        do.call(what="rbind") |>
+        data.frame() |>
+        setname(c("gcm","method","scen")) |>
+        setname(names(vdata), "row")
+
+    ## factors ordered for sorting
+    vmeta$scen   <- factor(vmeta$scen, levels=scen)
+    vmeta$gcm    <- factor(vmeta$gcm, levels=gcms)
+    vmeta$method <- factor(vmeta$method, levels=methods)
+
+    vmeta <- vmeta[with(vmeta, order(scen, gcm, method)),]
+
+    ## plot ranges
+    vlim <- lapply(vdata, apply, 1, narange) |>
+        abind(along=0) |> apply(3, zerange) |>
+        data.frame() |> as.list()
+
+
+    for(meth in dynmethods){
+
+        ## which ones to plot
+        plotids <- rownames(vmeta)[with(vmeta, ( scen=="obs" |
+                                                 (scen=="hist" &
+                                                  method==meth)))]
+        
+        gnames <- strsplit(plotids, '.', fixed=TRUE) |> sapply('[',1)
+        gnamelist <- list(gcm=gnames, var=NULL, lon=NULL, lat=NULL)
+
+        plotdata <- abind(vdata[plotids], along=0, use.dnns=TRUE,
+                          new.names=gnamelist)
+
+        if(test){
+            dev.new(width=15, height=5.5)
+        } else {
+            outfile <- paste("monstdev", meth, mnum, "png", sep='.')
+            png(file=paste0(mplotdir, "/", outfile),
+                width=15, height=5.5, units="in", res=120)
+        }
+        
+        main <- paste(meth, mon, "baseline upper atmosphere stdev, hist")
+        gridmap(lon, lat, plotdata, mapcol='black', zlims=vlim,
+                cmaps=vmap, units=uaunits, main=main)
+
+        if(!test){ dev.off() }
+    }
 }
-
