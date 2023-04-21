@@ -122,9 +122,11 @@ for(loc in unique(ameta$loc)){
         for(meth in dynmethods) {
 
             if(!test){
-                mplotdir <- paste(plotdir, mon, loc, sep='/')        
-                system(paste("mkdir -p", mplotdir))
-                plotbase <- paste(meth, mon, loc, "png", sep='.')
+                mplotdir <- paste(plotdir, mon, sep='/')
+                lplotdir <- paste(mplotdir, loc, sep='/')        
+                system(paste("mkdir -p", lplotdir))
+                mplotbase <- paste(meth, mon, "png", sep='.')
+                lplotbase <- paste(meth, mon, loc, "png", sep='.')
             }
 
             
@@ -151,13 +153,13 @@ for(loc in unique(ameta$loc)){
             if(test) {
                 dev.new(width=15, height=5.5)
             } else {
-                png(file=paste0(mplotdir,"/baseline.", plotbase),
+                png(file=paste0(plotdir,"/baseline.", meth, ".png"),
                     width=15, height=5.5, units="in", res=120)
             }
             
-            main <- paste(meth, "baseline upper atmosphere climatology,",
-                          "hist", loc)
-            gridmap(lon, lat, basedata, mapcol='black', zlims=abslim, #zlims=blim,
+            main <- paste("hist", meth,
+                          "baseline upper atmosphere climatology")
+            gridmap(lon, lat, basedata, mapcol='black', zlims=abslim,
                     cmaps=climap, units=uaunits, main=main)
             
             if(!test){ dev.off() }
@@ -188,13 +190,13 @@ for(loc in unique(ameta$loc)){
             if(test) {
                 dev.new(width=10, height=9)
             } else {            
-                png(file=paste0(mplotdir,"/monclim.", plotbase),
+                png(file=paste0(mplotdir,"/monclim.", mplotbase),
                     width=10, height=9, units="in", res=120)
             }
 
-            main <- paste(meth, mname, "upper atmosphere climatology,",
-                          "hist", loc)
-            gridmap(lon, lat, mondata, facets, cmaps=climap, zlims=abslim, #mlim,
+            main <- paste("hist", meth, mname,
+                          "upper atmosphere climatology")
+            gridmap(lon, lat, mondata, facets, cmaps=climap, zlims=abslim,
                     units=uaunits, main=main, mapcol="black")
 
             if(!test) {dev.off()}
@@ -202,7 +204,8 @@ for(loc in unique(ameta$loc)){
             ###########
             ## monthly climatology change
 
-            futids <- rownames(ameta)[with(ameta, month==mon & scen=="rcp85" &
+            futids <- rownames(ameta)[with(ameta, month==mon &
+                                                  scen=="rcp85" &
                                                   method==meth)]
 
             fnames <- strsplit(futids, '.', fixed=TRUE) |> sapply('[',3)
@@ -224,15 +227,15 @@ for(loc in unique(ameta$loc)){
             if(test) {
                 dev.new(width=10, height=7)
             } else {            
-                png(file=paste0(mplotdir,"/change.", plotbase),
+                png(file=paste0(mplotdir,"/change.", mplotbase),
                     width=10, height=7, units="in", res=120)
             }            
             
-            main <- paste(meth, mname, "climatology change,", loc,",",
+            main <- paste(meth, mname, "climatology change,",
                           uameta$span[3],"vs", uameta$span[2])
-            gridmap(lon, lat, changedata, facets, cmaps=anomap, zlims=changelim,
-                    units=uaunits, main=main, mapcol="black",
-                    arrowcol="darkgray")
+            gridmap(lon, lat, changedata, facets, cmaps=anomap,
+                    zlims=changelim, units=uaunits, main=main,
+                    mapcol="black", arrowcol="darkgray")
             
             if(!test){ dev.off() }
 
@@ -250,12 +253,12 @@ for(loc in unique(ameta$loc)){
             if(test) {
                 dev.new(width=10, height=9)
             } else {            
-                png(file=paste0(mplotdir,"/anomaly.", plotbase),
+                png(file=paste0(mplotdir,"/anomaly.", mplotbase),
                     width=10, height=9, units="in", res=120)
             }
             
-            main <- paste(meth, mname, "upper atmosphere anomaly vs climatology,",
-                          "hist", loc)
+            main <- paste("hist", meth, mname,
+                          "upper atmosphere anomaly vs climatology")
             gridmap(lon, lat, anomdata, facets, cmaps=anomap, zlims=anomlim,
                     units=uaunits, main=main, mapcol="black",
                     arrowcol="darkgray")
@@ -270,7 +273,7 @@ for(loc in unique(ameta$loc)){
             bfacets <- facets
             bfacets$title <- c("850-mb Qflux",
                                "700-mb T & Z",
-                               "high circul'n")
+                               "250-mb winds")
 
             ## names of anomalies to plot
             baseids <- rownames(ameta)[with(ameta, month==mon &
@@ -289,7 +292,7 @@ for(loc in unique(ameta$loc)){
 
             for(bmeth in bmethods){
                 
-                bpbase <- sub("raw", bmeth, plotbase)
+                bpbase <- sub("raw", bmeth, lplotbase)
                 bbaseids <- sub("raw", bmeth, baseids)
                 deltadata <- lapply(renest(anom$delta[bbaseids]), abind,
                                     along=0, use.dnns=TRUE,
@@ -306,7 +309,7 @@ for(loc in unique(ameta$loc)){
                     if(test) {
                         dev.new(width=10, height=9)
                     } else {
-                        png(file=paste0(mplotdir,"/delta.", b, ".", bpbase),
+                        png(file=paste0(lplotdir,"/delta.", b, ".", bpbase),
                             width=10, height=9, units='in', res=120)
                     }
                     
@@ -334,103 +337,4 @@ for(loc in unique(ameta$loc)){
         } ## meth
     }  ## mon
 }  ## loc
-
-
-stop()
-
-        
-## all buckets by method
-
-#testpt <- list(x=x, y=y, pch=23, col="black", bg="red")
-
-for(m in methods){
-#    dev.new(width=14, height=9)
-    png(file=paste0(mplotdir,"/anom.method.",mm,".",m,".png"),
-        width=14, height=9, units='in', res=120)
-    main <- paste(gcm,"+",m, "UA", mon, "anomaly difference")
-    abbm <- bconus$hist$delta[,m,,,]
-
-    gridmap(clon, clat, abbm, facets, cmaps=anomap, zlims=slim,
-            units=uaunits, mapcol='black', main=main, pointargs=testpt,
-            arrowcol='dimgray', concol="dimgray", concex=0.8)
-
-#    dev.copy2pdf(file=paste0(bplotdir,"/anom.method.",mm,".",m,".pdf"),
-#                 width=14, height=9, title=main)
-    dev.off()
-}
-
-# 
-# 
-# ## faceted approach using ggplot
-# 
-# library(ggplot2)
-# library(reshape2)  
-# library(maps)
-# library(plyr)
-# library(gridExtra)
-# 
-# defactor <- function(x) {as.numeric(levels(x))[x]}
-# 
-# ## ggplot wants data in long format
-# ## it's 6x bigger, but not a problem at the monthly scale
-# 
-# totclim <- abind(uaconus$totclim[ocf], along=0, use.dnns=TRUE) |>
-#      setname("period", "ndn") |>
-#     adply(c(1,3,4,5))
-# 
-# ## we do need to convert lat & lon back to numeric
-# totclim$lon <- defactor(totclim$lon)
-# totclim$lat <- defactor(totclim$lat)
-# 
-# rawmay <- subset(totclim, month=="May")
-# 
-# 
-# ## wind polygons
-# 
-# w850scale <- min(diff(clon),diff(clat))/max(mlim$U850, mlim$V850)
-# w250scale <- min(diff(clon),diff(clat))/max(mlim$U250, mlim$V250)
-# 
-# w850 <- with(rawmay, polyfield(U850, V850, lon, lat, scale=w850scale, pad=FALSE))
-# w250 <- with(rawmay, polyfield(U250, V250, lon, lat, scale=w250scale, pad=FALSE))
-# 
-# foo <- mapply(cbind, id=1:length(w850), w850, SIMPLIFY=FALSE) 
-# bar <- do.call(rbind, foo)
-# baz <- data.frame(id=1:nrow(rawmay), value=rawmay$A850)
-# buz <- merge(bar, baz, by=c("id"))
-# 
-# ggplot(buz, aes(x=x, y=y, asp=1)) + 
-#     geom_polygon(aes(fill=value, group=id))+
-#     borders("state", xlim=xr, ylim=yr, lwd=1/8, col="black")
-# 
-# 
-# base <- ggplot(rawmay, aes(x=lon, y=lat)) +
-#     xlim(xr) + ylim(yr) +
-#     coord_fixed() + ## square aspect ratio 
-#     theme(legend.position="bottom",
-#           axis.title.x = element_blank(),
-#           axis.title.y = element_blank()) +
-#     borders("state", xlim=xr, ylim=yr, lwd=1/8, col="black")+
-#     borders("world",c("Can","Mex"), xlim=xr, ylim=yr, lwd=1/8, col="black")
-# 
-# qflux <- base + 
-#     geom_tile(aes(fill=A850)) + ## raster plot
-#     scale_fill_gradientn(colors=climap[["A850"]],
-#                          limits=blim[["A850"]]) +
-#     facet_grid(vars(period)) +
-#     geom_segment(aes(xend=lon+U850*w850scale, yend=lat+V850*w850scale))
-# 
-# 
-# hicirc <- base + 
-#     geom_tile(aes(fill=Z500)) + ## raster plot
-#     scale_fill_gradientn(colors=anomap[["Z500"]],
-#                          limits=blim[["Z500"]])+
-#     facet_grid(vars(period)) +
-#     geom_segment(aes(xend=lon+U250*w250scale, yend=lat+V250*w250scale))
-# 
-# grid.arrange(qflux, hicirc, nrow=1)
-# 
-# 
-# ## Okay, that's pretty slick.
-# 
-# ## Have to figure out how to rearrange layers, but I think it's good.
 
