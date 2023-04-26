@@ -2,7 +2,6 @@
 
 library(abind)
 
-source("calcfun.R")
 source("plotfun.R")
 source("names.R")
 source("util.R")
@@ -15,6 +14,7 @@ load("data/buckets.Rdata")
 
 
 ## TRUE = plot onscreen, FALSE = plot to file
+#test = TRUE
 test = FALSE
 
 plotdir <- "plot/upper"
@@ -52,21 +52,15 @@ anom <- lapply(infiles, listload) |>   ##listload from util.R
     lapply('[[',1) |>
     setname(innames) |>
     rapply(clean, how="replace") |>
-    rapply(calcA, how="replace") |>
-    rapply(calcS, how="replace") |>
     renest()
 
-vars <- c(vars, "A850", "S250")
-uaunits["A850"] <- paste(uaunits["Q850"], uaunits["U850"])
-uaunits["S250"] <- uaunits["U250"]
 
-
-### HACK!  Temporary fix to WRF zg, which is off by x10
+### HACK!  Temporary fix to WRF zg, which needs geopot to geopot height
 for(i in grep("WRF", innames)){
     for(a in 1:6){
         for(z in c("Z700","Z500")){
             if(a <= 3){
-                anom[[a]][[i]][z,,] <- anom[[a]][[i]][z,,] / 10
+                anom[[a]][[i]][z,,] <- anom[[a]][[i]][z,,] / 9.8
             } else {
                 for(b in buckets){
                     anom[[a]][[i]][[b]][z,,] <- anom[[a]][[i]][[b]][z,,] / 10
@@ -80,34 +74,43 @@ for(i in grep("WRF", innames)){
 ################
 ## Uniform scales for plotting
 
+obs <- grep("obs", names(anom$baseline), val=TRUE)
+cur <- grep("hist", names(anom$baseline), val=TRUE)
+fut <- grep("rcp85", names(anom$baseline), val=TRUE)
+
 ## range types for abs vars
 rtype <- c(U850=srange, V850=srange, Q850=zerange, T700=narange, Z700=narange,
            Z500=narange, U250=zerange, V250=srange, A850=zerange, S250=zerange)
 
+absblock <- c(renest(anom$bclim), anom[c("baseline","clim")]) |>
+    lapply(abind, along=0) |> abind(along=0)
 
-recrange <- function(x){
-    lapply(x, apply, 1, narange) |> do.call(what=rbind) |> apply(2,range)
-}
-
-temp <- c(renest(anom$bclim), anom[c("baseline","clim")]) |>
-    lapply(recrange) |> do.call(what=rbind) |> apply(2, range)
-
-abslim <- mapply(do.call, as.list(rtype), apply(temp, 2, list)) |>
+abslim <- mapply(do.call, as.list(rtype),
+                 apply(absblock[,c(obs,cur),,,], 3, list)) |>
     as.data.frame() |> as.list()
 
-## override, b/c apparently there's an outlier somewhere:
-abslim$A850 <- c(0,60)
+## manual override; WRF has large values at SE boundary edge
+abslim$A850 <- c(0,85)
 
-#difflim <- c(renest(anom$delta), renest(anom$banom), list(anom$anom)) |> 
-#    lapply(recrange) |> do.call(what=rbind) |> apply(2, srange) |>
-#    as.data.frame() |> as.list()
 
-## HACK - need to separate current these more (current/future?) and I
-## don't have time to figure it out right now.  Hard-coding.
+chgblock <- absblock[,fut,,,] - absblock[,cur,,,]
+changelim <- apply(chgblock, 3, srange) |>
+    as.data.frame() |> as.list()
 
-deltalim  <- list(A850=c(-6,6),   T700=c(-2,2), S250=c(-10,10), Z700=c(-25,25))
-anomlim   <- list(A850=c(-12,12), T700=c(-5,5), S250=c(-12,12), Z700=c(0,60))
-changelim <- list(A850=c(-45,45), T700=c(-8,8), S250=c(-8,8),   Z700=c(30,80))
+
+anomblock <- abind(anom$anom, along=0)
+anomlim <- apply(anomblock[c(obs, cur),,,], 2, srange) |>
+    as.data.frame() |> as.list()
+
+## manual override: zg gets contoured, is mostly positive
+anomlim$Z700 <- narange(anomblock[c(obs,cur),"Z700",,])
+
+
+deltablock <- lapply(anom$delta, abind, along=0) |> abind(along=0)
+
+deltalim <- apply(deltablock[c(obs,cur),,,,], 3, srange) |>
+    as.data.frame() |> as.list()
+
 
 #################
 ## analysis loops
@@ -174,6 +177,8 @@ for(loc in unique(ameta$loc)){
             
             ###########
             ## combined monthly climatology plot
+
+            ## 
             
             facets <- as.data.frame(
                 cbind(
@@ -291,8 +296,9 @@ for(loc in unique(ameta$loc)){
             }
 
             for(bmeth in bmethods){
-                
-                bpbase <- sub("raw", bmeth, lplotbase)
+                if(!test){
+                    bpbase <- sub("raw", bmeth, lplotbase)
+                }
                 bbaseids <- sub("raw", bmeth, baseids)
                 deltadata <- lapply(renest(anom$delta[bbaseids]), abind,
                                     along=0, use.dnns=TRUE,

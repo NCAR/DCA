@@ -10,7 +10,7 @@ If there's no synchrony, it can't fit into this framework...
 SCRIPTS
 -------------
 
-1) ingest.R converts converts upper-atmosphere netcdf files to arrays
+0) ingest.R converts upper-atmosphere netcdf files to arrays
 
 run on casper with 25 GB (check) memory, execcasper --mem 25GB
 takes about 45 minutes (file output is slooooooowww)
@@ -34,6 +34,15 @@ idcols[]				# (gcm, rcm, scen)
 uameta[id, c(idcols, span)]		# dataframe
 uaunits[]
 vars[]
+
+-------------
+
+1) calc.R adds derived vars to ua files
+
+A850: moisture advection = q * sqrt(u^2 + v^2)
+S250: wind speed = sqrt(u^2 + v^2)
+
+Updates output of ingest.R
 
 -------------
 
@@ -111,6 +120,7 @@ DATA
 	WRF - divide zg upstream by 9.8 (gravity)
 		(convert geopotential to geopotential height)
 #	calculate variance of UA variables
+#	calculate A850 & S250 upstream
 
 GRIDMAPS
 #	plot UA variance

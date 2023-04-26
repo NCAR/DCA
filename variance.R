@@ -1,6 +1,5 @@
 ## Calculate variance for UA variables by method, month
 
-source("calcfun.R")
 source("names.R")
 source("~/climod/R/renest.R")
 
@@ -42,7 +41,7 @@ for(i in 1:length(infiles)){
 
     ## unwrap list - don't use unlist(); it flattens to vector
     id <- names(ua) |> gsimp()
-    ua <- ua[[1]] |> clean() |> calcA() |> calcS()
+    ua <- ua[[1]] |> clean()
 
     ## need to fix this upstream, too
     if(grepl("WRF", id)){
@@ -72,6 +71,8 @@ for(i in 1:length(infiles)){
 #    save(file=paste0(outdir,"/", outfile), monvar)
 }
 
+save(file=paste0(outdir,"/ua.var.Rdata"), vardata)
+
 
 ## And now plot...
 
@@ -80,10 +81,6 @@ source("plotfun.R")
 load("data/rdata/misc.Rdata")
 load("data/rdata/ua.meta.Rdata")
 load("plot/cmaps.Rdata")
-
-vars <- c(vars, "A850", "S250")
-uaunits["A850"] <- paste(uaunits["Q850"], uaunits["U850"])
-uaunits["S250"] <- uaunits["U250"]
 
 
 #for(m in 1:12){
@@ -118,10 +115,10 @@ for(m in 5){
     vmeta <- vmeta[with(vmeta, order(scen, gcm, method)),]
 
     ## plot ranges
-    vlim <- lapply(vdata, apply, 1, narange) |>
-        abind(along=0) |> apply(3, zerange) |>
-        data.frame() |> as.list()
-
+    vblock <- abind(vdata, along=0)
+    nonfut <- grep("rcp85", names(vdata), inv=TRUE, val=TRUE)
+    vlim <- apply(vblock[nonfut,,,], 2, zerange) |>
+        as.data.frame() |> as.list()
 
     for(meth in dynmethods){
 
@@ -150,4 +147,5 @@ for(m in 5){
 
         if(!test){ dev.off() }
     }
+    
 }
