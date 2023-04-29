@@ -8,10 +8,15 @@ outdir <- "plot/bucket"
 mnum <- paste0("m", sprintf("%02d",1:12))
 names(mnum) <- month.abb
 
-methods <- head(levels(bstat$method), -1)
-nm <- length(methods)
-
 gcms <- c("HadGEM","MPI","GFDL")  ## ordered by ECS
+
+## whether to include LOCA in figures
+loca <- TRUE
+
+skip <- function(x, y){ x[!(x %in% y)] }
+dropme <- if(loca) {"gridMET"} else {c("gridMET","LOCA")}
+methods <- levels(bstat$method) |> skip(dropme)
+nm <- length(methods)
 
 
 ## To get all 3 buckets on the same barchart, grouped and stacked,
@@ -50,8 +55,10 @@ for(invert in c(TRUE, FALSE)){
                     cex.axis=1.2)
 
                 for(GCM in gcms){
+                    dropme <- if(loca) {""} else {"LOCA"}
                     pbs <- subset(bstat, month==mon & locname==loc &
-                                         gcm %in% c(GCM,"ERAI"))
+                                         gcm %in% c(GCM,"ERAI") &
+                                         !(method %in% dropme))
 
                     ## create NA array, fill in appropriate slots in 3 copies
                     pctarr <- array(dim=c(3, 1+3*nm),
@@ -64,7 +71,7 @@ for(invert in c(TRUE, FALSE)){
                     } else {
                         slots <- list(hist=(1:nm)+2, rcp85=(1:nm)+3+nm, obs=1)
                     }
-
+                    
                     gsbar <- split(pbs[,c("scen","method","bucket","pct")],~scen) |>
                         lapply(reshape, direction="wide", drop="scen",
                                idvar="bucket", timevar="method") |>
@@ -137,8 +144,8 @@ for(invert in c(TRUE, FALSE)){
             }
         }
 
-        loca=TRUE
-
+        ## annual cycle plots        
+        
         if(loca){
             dropme <- c("dummy")
             panels <- c(3,3)
@@ -149,7 +156,6 @@ for(invert in c(TRUE, FALSE)){
             size <- list(width=5.5, height=7)
         }
         
-        ## annual cycle plots
         for(GCM in gcms){
             for(s in scen[-1]){
                 ann <- subset(bstat, locname==loc &

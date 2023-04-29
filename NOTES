@@ -126,7 +126,7 @@ DATA
 
 BARPLOT
 #	add switch to invert (wet bucket on bottom), do both ways
-	(be setup to drop LOCA)
+#	be setup to drop LOCA
 #	seasonal cycle of bucket fraction
 #	       month-by-month
 #	       panel by method w/ dyn & stat grouped
