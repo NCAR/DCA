@@ -119,11 +119,22 @@ DATA
 	Double-check HadGEM UA, no calendar issues
 	WRF - divide zg upstream by 9.8 (gravity)
 		(convert geopotential to geopotential height)
+	RCM precip - *IS* bc, should be raw
+	    	fix!
 #	calculate variance of UA variables
 #	calculate A850 & S250 upstream
 
+BARPLOT
+#	add switch to invert (wet bucket on bottom), do both ways
+	(be setup to drop LOCA)
+#	seasonal cycle of bucket fraction
+#	       month-by-month
+#	       panel by method w/ dyn & stat grouped
+	printed table of bucket %ages
+
 GRIDMAPS
 #	plot UA variance
+	(be setup to drop LOCA if needed)
 	stat summary of Q850 delta plots
 		zoom in on region: 4 corners states + equiv east
 		mask out same mountains in all runs
