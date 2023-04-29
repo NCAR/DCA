@@ -120,6 +120,60 @@ for(loc in "SGP-98-36"){
             dev.off()
         }
     }
+
+    loca=TRUE
+
+    if(loca){
+        dropme <- c("dummy")
+        panels <- c(3,3)
+        size <- list(width=8, height=5)
+    } else {
+        dropme <- c("dummy","LOCA")
+        panels <- c(4,2)
+        size <- list(width=5.5, height=7)
+    }
+    
+    ## annual cycle plots
+    for(GCM in gcms){
+        for(s in scen[-1]){
+            for(ifun in c(I, rev)){  ## invert plot
+                ann <- subset(bstat, locname==loc &
+                                     gcm %in% c("ERAI",GCM) &
+                                     scen %in% c(s, "obs") &
+                                     !(method %in% dropme)) |>
+                    split(~ method + gcm + scen, drop=TRUE) |>
+                    lapply(subset, subset=TRUE,
+                           select=c("bucket","month","pct")) |>
+                    lapply(reshape, dir="wide",
+                           idvar="bucket",
+                           timevar="month") |>
+                    lapply(tail, n=c(NA,-1)) |>
+                lapply(as.matrix) |>
+                    lapply(setname, nm=list(buckets, month.abb), ntype="all")
+
+
+                prefix <- if(identical(ifun, rev)){"icycle"}else{"cycle"}
+                outname <- paste(prefix,"bar", s, GCM, loc, sep='.')
+                outfile <- paste0(outdir, '/', outname, ".png")
+                do.call(png, c(list(file=outfile, units="in", res=120), size))
+                # do.call(dev.new, size)
+                #  dev.new(width=8, height=4)
+                par(mfcol=panels, las=2, oma=c(3,0,0,0),
+                    mar=c(3,2.5,2,0.5), mgp=c(3,0.5,0))
+                for(i in names(ann)){
+                    wetdry <- apply(ann[[i]], 2, ifun)
+                    cmap <- bucketmap[sapply(scen, grepl, i)] |>
+                        unlist() |> ifun()
+                    barplot(wetdry, main=i, col=cmap)
+                }
+                ## outer margin legend
+                par(mfrow=c(1,1), oma=rep(0,4), mar=rep(0,4), new=TRUE)
+                plot(0:1, 0:1, type='n', axes=FALSE, ann=FALSE)
+                legend("bottom", buckets, fill=bucketmap$hist, horiz=TRUE)
+                dev.off()
+            }
+        }
+    }
 }
 
- 
+
