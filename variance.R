@@ -42,11 +42,6 @@ for(i in 1:length(infiles)){
     ## unwrap list - don't use unlist(); it flattens to vector
     id <- names(ua) |> gsimp()
     ua <- ua[[1]] |> clean()
-
-    ## need to fix this upstream, too
-    if(grepl("WRF", id)){
-        ua[c("Z700","Z500"),,,] <- ua[c("Z700","Z500"),,,] / 9.8 
-    }
         
     ## indexing
     dates <- dimnames(ua)$date

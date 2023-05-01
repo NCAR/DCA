@@ -118,9 +118,17 @@ $delta$bucket[var,lon,lat]			# banom - anom
 DATA
 	Double-check HadGEM UA, no calendar issues
 	WRF - divide zg upstream by 9.8 (gravity)
-		(convert geopotential to geopotential height)
+#		(convert geopotential to geopotential height)
+#		fix Z.nc files on glade
+#		rerun ingest.R
+#		download new ua.Rdata files
+#		rerun calc.R then anomaly.R
+		remove special-case code in gridmaps & rerun + variance
 	RCM precip - *IS* bc, should be raw
-	    	fix!
+	    	fix on glade
+		run extract.R on casper
+		download new files
+		rerun stat, bucket, anomaly, gridmaps, barplots, qq, variance
 #	calculate variance of UA variables
 #	calculate A850 & S250 upstream
 

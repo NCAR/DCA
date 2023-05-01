@@ -55,22 +55,6 @@ anom <- lapply(infiles, listload) |>   ##listload from util.R
     renest()
 
 
-### HACK!  Temporary fix to WRF zg, which needs geopot to geopot height
-for(i in grep("WRF", innames)){
-    for(a in 1:6){
-        for(z in c("Z700","Z500")){
-            if(a <= 3){
-                anom[[a]][[i]][z,,] <- anom[[a]][[i]][z,,] / 9.8
-            } else {
-                for(b in buckets){
-                    anom[[a]][[i]][[b]][z,,] <- anom[[a]][[i]][[b]][z,,] / 10
-                }
-            }
-        }
-    }
-}
-
-
 ################
 ## Uniform scales for plotting
 
