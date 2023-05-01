@@ -74,16 +74,7 @@ data/prec/SGP.all.Rdata			# precip data w/ stat downscaling
 
 -------------
 
-4) misc.R collates some useful vars from prec df
-
-data/rdata/misc.Rdata			# assorted useful vars
-
-gcms, scen, methods, dynmethods		# sorted by plotting order
-locs, plon, plat
-
--------------
-
-5) bucket.R maps precip to wet/moist/dry days & calculates stats
+4) bucket.R maps precip to wet/moist/dry days & calculates stats
 
 data/buckets.Rdata			# stats of precip aggregated by amount
 
@@ -97,6 +88,15 @@ $gcm, method, scen			# factors, as above
 $locname, lon, lat			# as above
 $bucket	       				# factor
 $count, pct				# count & pctage of days by subset
+
+-------------
+
+5) misc.R collates some useful vars from prec df
+
+data/rdata/misc.Rdata			# assorted useful vars
+
+gcms, scen, methods, dynmethods		# sorted by plotting order
+locs, plon, plat
 
 -------------
 
@@ -123,12 +123,12 @@ DATA
 #		rerun ingest.R
 #		download new ua.Rdata files
 #		rerun calc.R then anomaly.R
-		remove special-case code in gridmaps & rerun + variance
-	RCM precip - *IS* bc, should be raw
-	    	fix on glade
-		run extract.R on casper
-		download new files
-		rerun stat, bucket, anomaly, gridmaps, barplots, qq, variance
+#		remove special-case code in gridmaps, variance & rerun
+#	RCM precip - *IS* bc, should be raw
+#	    	fix on glade
+#		run extract.R on casper
+#		download new files
+#		rerun stat, bucket, misc, anomaly, gridmaps, bar, qq
 #	calculate variance of UA variables
 #	calculate A850 & S250 upstream
 
