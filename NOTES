@@ -117,7 +117,7 @@ $delta$bucket[var,lon,lat]			# banom - anom
 -------------
 DATA
 	Double-check HadGEM UA, no calendar issues
-	WRF - divide zg upstream by 9.8 (gravity)
+#	WRF - divide zg upstream by 9.8 (gravity)
 #		(convert geopotential to geopotential height)
 #		fix Z.nc files on glade
 #		rerun ingest.R
@@ -143,14 +143,14 @@ BARPLOT
 GRIDMAPS
 #	plot UA variance
 	(be setup to drop LOCA if needed)
-	stat summary of Q850 delta plots
-		zoom in on region: 4 corners states + equiv east
-		mask out same mountains in all runs
-		stats:
-		pattern correlation vs obs
-		MAE vs obs
-		other similarity metric, e.g. SSIM?
-			SpatialPack / spatialcompare pkgs
+#	stat summary of Q850 delta plots
+#		zoom in on region: 4 corners states + equiv east
+#		mask out same mountains in all runs
+#		stats:
+#		pattern correlation vs obs
+#		MAE vs obs
+x		other similarity metric, e.g. SSIM?
+x			SpatialPack / spatialcompare pkgs
 
 
 A) barplots.R				# barplots of bucket stats
