@@ -78,4 +78,4 @@ for(m in mn){
 metrics$cor <- round(metrics$cor, digits=3)
 metrics$mae <- round(metrics$mae, digits=3)
 
-write.csv(metrics, file="plot/corr.csv", row.names=FALSE)
+write.csv(metrics, file="plot/corr.wet.delta.csv", row.names=FALSE)
