@@ -188,7 +188,7 @@ for(invert in c(TRUE, FALSE)){
                 ## outer margin legend
                 par(mfrow=c(1,1), oma=rep(0,4), mar=rep(0,4), new=TRUE)
                 plot(0:1, 0:1, type='n', axes=FALSE, ann=FALSE)
-                legend("bottom", buckets, fill=bmap$hist, horiz=TRUE)
+                legend("bottom", ifun(buckets), fill=bmap$hist, horiz=TRUE)
                 dev.off()
             }
         }
