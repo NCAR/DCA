@@ -179,3 +179,29 @@ for(GCM in gcms){
         dev.off()
     }
 }
+
+
+## Precip amount, annual cycle
+
+pclim <- aggregate(prec ~ month + gcm + method + scen + locname,
+                   data=subset(prec, locname==loc), FUN=mean, drop=TRUE)
+
+opc <- subset(pclim, scen=="obs")
+
+
+if(test) {
+    dev.new(width=6, height=4)
+} else {
+    png(file=paste0(plotdir, '/obs.prec.png'),
+        width=6, height=4, units='in', res=120)
+}
+
+
+bx <- barplot(opc$prec, ylab="mm/day", col="darkblue",
+              main=paste("obs mean daily precip,", loc))
+axis(side=1, lab=month.abb, at=bx, las=2)
+
+if(!test){
+    dev.off()
+}
+
