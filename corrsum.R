@@ -7,7 +7,7 @@ source("~/climod/R/renest.R")
 load("data/rdata/misc.Rdata")
 load("data/rdata/ua.meta.Rdata")
 
-
+clean <- function(x){x[abs(x)>1e20]<-NA; return(x)}
 
 infiles <- dir("data/anom", rec=TRUE, full=TRUE)
 
@@ -71,11 +71,28 @@ for(m in mn){
     for(v in vars){
         id <- paste(m, v, sep='.')
         metrics[id,"cor"] <- cor(c(obs[v,,]), c(mod[m,v,,]), use="pair")
-        metrics[id,"mae"] <- sum(abs(obs[v,,] - mod[m,v,,]), na.rm=TRUE)
+        metrics[id,"mae"] <- mean(abs(obs[v,,] - mod[m,v,,]), na.rm=TRUE)
     }
 }
 
-metrics$cor <- round(metrics$cor, digits=3)
-metrics$mae <- round(metrics$mae, digits=3)
+
+
+ms <- function(x){list(center=mean(x, na.rm=TRUE),
+                       scale=sd(x, na.rm=TRUE))}
+
+gauss <- subset(metrics, scen=="hist", c("vars","mae")) |>
+    split(~ vars) |>
+    lapply('[[', "mae") |>
+    lapply(ms)
+
+metrics$z.mae <- split(metrics, ~ vars) |>
+    lapply('[[', "mae") |>
+    lapply(list) |>
+    mapply(FUN=c, gauss, SIMPLIFY=FALSE) |>
+    lapply(do.call, what=scale) |>
+    unsplit(metrics$vars)
+
+numcols <- c("cor","mae","z.mae")
+metrics[numcols] <- lapply(metrics[numcols], round, digits=3)
 
 write.csv(metrics, file="plot/corr.wet.delta.csv", row.names=FALSE)
