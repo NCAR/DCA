@@ -76,23 +76,44 @@ for(m in mn){
 }
 
 
-
-ms <- function(x){list(center=mean(x, na.rm=TRUE),
-                       scale=sd(x, na.rm=TRUE))}
-
-gauss <- subset(metrics, scen=="hist", c("vars","mae")) |>
-    split(~ vars) |>
-    lapply('[[', "mae") |>
-    lapply(ms)
-
-metrics$z.mae <- split(metrics, ~ vars) |>
-    lapply('[[', "mae") |>
-    lapply(list) |>
-    mapply(FUN=c, gauss, SIMPLIFY=FALSE) |>
-    lapply(do.call, what=scale) |>
-    unsplit(metrics$vars)
-
-numcols <- c("cor","mae","z.mae")
+numcols <- c("cor","mae")
 metrics[numcols] <- lapply(metrics[numcols], round, digits=3)
-
+factcols <- c("method","scen","gcm")
+metrics[factcols] <- lapply(metrics[factcols], as.character)    
+    
 write.csv(metrics, file="plot/corr.wet.delta.csv", row.names=FALSE)
+
+
+###
+
+gcol <- c(HadGEM=2, MPI=4, GFDL=3) # red, blue, green
+
+rsym <- c(raw=20,       # small dot
+          RegCM4=2,     # up triangle
+          WRF=6,        # down triangle
+          CNN=13,       # crossed circle
+          LOCA=8,       # *
+          SDSM=3,       # +
+          qdm=39,       # '
+          simple=45,    # -
+          dummy=1)      # o
+
+#dev.new(width=10, height=10)
+png(file="plot/corr-mae.png", width=10, height=10, units="in", res=120)
+par(mfcol=c(3,3), mar=c(3.1, 3.1, 2, 1), mgp=c(1.5,0.5,0))
+
+for (v in c("A850", "U850", "V850",
+            "T700", "legend", "Z700",
+            "S250", "U250", "V250")){
+    if(v == "legend"){
+        plot(c(0,1), c(0,1), pch=NA, ann=FALSE, axes=FALSE)
+        legend("top", names(rsym), pch=rsym, ncol=2, cex=1.3)
+        legend("bottom", names(gcol), fill=gcol)
+    } else {
+        m <- subset(metrics, vars==v & scen=="hist")
+        plot(m$cor, m$mae, #xlim=c(-1,1), ylim=c(0,max(m$mae)),
+         main=v, xlab="correlation", ylab="MAE",
+         pch=rsym[m$method], col=gcol[m$gcm], cex=1.3)
+    }
+}
+dev.off()
