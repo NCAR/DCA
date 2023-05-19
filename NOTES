@@ -151,6 +151,9 @@ GRIDMAPS
 #		MAE vs obs
 x		other similarity metric, e.g. SSIM?
 x			SpatialPack / spatialcompare pkgs
+#	future deltas
+	combined gridmap of May climatology
+	combined gridmap of May climatology bias vs obs
 
 
 A) barplots.R				# barplots of bucket stats

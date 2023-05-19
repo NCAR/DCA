@@ -258,72 +258,75 @@ for(loc in unique(ameta$loc)){
             #############
             ## bucketized climatology
 
-            ## short titles
-            bfacets <- facets
-            bfacets$title <- c("850-mb Qflux",
-                               "700-mb T & Z",
-                               "250-mb winds")
+            for(scenario in scen[-1]){  ## not obs
+                
+                ## short titles
+                bfacets <- facets
+                bfacets$title <- c("850-mb Qflux",
+                                   "700-mb T & Z",
+                                   "250-mb winds")
 
-            ## names of anomalies to plot
-            baseids <- rownames(ameta)[with(ameta, month==mon &
-                                                   ( scen=="obs" |
-                                                     (scen=="hist" &
-                                                      method==meth)))]
-            
-            
-            ## all methods by bucket
+                ## names of anomalies to plot
+                baseids <- rownames(ameta)[with(ameta, month==mon &
+                                                       ( scen=="obs" |
+                                                         (scen==scenario &
+                                                          method==meth)))]
+                
+                
+                ## all methods by bucket
 
-            if(meth == "raw") {
-                bmethods <- c("raw", statmethods)
-            } else {
-                bmethods <- meth
-            }
-
-            for(bmeth in bmethods){
-                if(!test){
-                    bpbase <- sub("raw", bmeth, lplotbase)
+                if(meth == "raw") {
+                    bmethods <- c("raw", statmethods)
+                } else {
+                    bmethods <- meth
                 }
-                bbaseids <- sub("raw", bmeth, baseids)
-                deltadata <- lapply(renest(anom$delta[bbaseids]), abind,
-                                    along=0, use.dnns=TRUE,
-                                    new.names=gnamelist)
 
-                bfreq <- subset(bstat, month == mnum & locname == loc &
-                                       method %in% c("gridMET", bmeth) &
-                                       scen %in% c("obs", "hist"))
-                
-                
-                ## delta (bucket anom - month anom)
-                for(b in buckets){
-                    
-                    if(test) {
-                        dev.new(width=10, height=9)
-                    } else {
-                        png(file=paste0(lplotdir,"/delta.", b, ".", bpbase),
-                            width=10, height=9, units='in', res=120)
-                    }
-                    
-                    main <- paste(bmeth, mname, "UA", b,
-                                  "anomaly difference,", "hist", loc)
-
-                    gridmap(lon, lat, deltadata[[b]], bfacets, cmaps=anomap,
-                            zlims=deltalim, units=uaunits, main=main,
-                            mapcol="black", pointargs=testpt,
-                            arrowcol="darkgray", concol="darkgray",
-                            margi=c(2,5,5,3,2,2)/8, concex=0.6)
-
-                    pct <- with(subset(bfreq, bucket==b),
-                                pct[match(gcm, gnames)]) |>
-                        sprintf(fmt="%#.1f%% of days")
-                    par(mfrow=c(1,1), oma=c(0,2,0,0))
-                    mtext(pct, side=2, outer=TRUE, line=1/2, cex=0.8,
-                          at=(4:1*2-1)/9+0.07)
-
+                for(bmeth in bmethods){
                     if(!test){
-                        dev.off()
+                        bpbase <- sub("raw", bmeth, lplotbase)
                     }
-                } ## buckets
+                    bbaseids <- sub("raw", bmeth, baseids)
+                    deltadata <- lapply(renest(anom$delta[bbaseids]), abind,
+                                        along=0, use.dnns=TRUE,
+                                        new.names=gnamelist)
+
+                    bfreq <- subset(bstat, month == mnum & locname == loc &
+                                           method %in% c("gridMET", bmeth) &
+                                           scen %in% c("obs", scenario))
+                    
+                    
+                    ## delta (bucket anom - month anom)
+                    for(b in buckets){
+                        
+                        if(test) {
+                            dev.new(width=10, height=9)
+                        } else {
+                            png(file=paste0(lplotdir,"/delta.", scenario, ".", b, ".", bpbase),
+                                width=10, height=9, units='in', res=120)
+                        }
+                        
+                        main <- paste(bmeth, mname, "UA", b,
+                                      "anomaly difference,", scenario, loc)
+
+                        gridmap(lon, lat, deltadata[[b]], bfacets, cmaps=anomap,
+                                zlims=deltalim, units=uaunits, main=main,
+                                mapcol="black", pointargs=testpt,
+                                arrowcol="darkgray", concol="darkgray",
+                                margi=c(2,5,5,3,2,2)/8, concex=0.6)
+
+                        pct <- with(subset(bfreq, bucket==b),
+                                    pct[match(gcm, gnames)]) |>
+                            sprintf(fmt="%#.1f%% of days")
+                        par(mfrow=c(1,1), oma=c(0,2,0,0))
+                        mtext(pct, side=2, outer=TRUE, line=1/2, cex=0.8,
+                              at=(4:1*2-1)/9+0.07)
+
+                        if(!test){
+                            dev.off()
+                        }
+                    } ## buckets
             } ## bmethods
+            } ## scenario
         } ## meth
     }  ## mon
 }  ## loc
