@@ -283,7 +283,7 @@ gridmap <- function(x, y, z,
             ## add contours if contour variable defined
             if(!is.null(cv <- facets[[f,"contour"]])){
                 ## aim for multiples of 50/100, not 20
-                lev <- pretty(zlims[[cv]], u5.bias=5)
+                lev <- pretty(zlims[[cv]]) #, u5.bias=5)
                 contour(x, y, z[C,cv,,], add=TRUE, method="edge", lwd=conlwd,
                         levels = lev, col=concol, labcex=concex,
                         vfont=c("sans serif", "bold"))
