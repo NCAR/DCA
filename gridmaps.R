@@ -54,6 +54,9 @@ anom <- lapply(infiles, listload) |>   ##listload from util.R
     rapply(clean, how="replace") |>
     renest()
 
+## a little inelegant, but time is short
+bias <- lapply(anom$clim[-1], sweep, 1:3, anom$clim[[1]])
+
 
 ################
 ## Uniform scales for plotting
@@ -95,6 +98,9 @@ deltablock <- lapply(anom$delta, abind, along=0) |> abind(along=0)
 deltalim <- apply(deltablock[c(obs,cur),,,,], 3, srange) |>
     as.data.frame() |> as.list()
 
+biasblock <- abind(bias, along=0)
+biaslim <- apply(biasblock[cur,,,], 2, srange) |>
+    as.data.frame() |> as.list()
 
 #################
 ## analysis loops
@@ -161,8 +167,6 @@ for(loc in unique(ameta$loc)){
             
             ###########
             ## combined monthly climatology plot
-
-            ## 
             
             facets <- as.data.frame(
                 cbind(
@@ -189,7 +193,34 @@ for(loc in unique(ameta$loc)){
                     units=uaunits, main=main, mapcol="black")
 
             if(!test) {dev.off()}
-            
+
+
+            ##########
+            ## monthly climatology bias
+
+            monbias <- abind(bias[baseids[-1]], along=0, use.dnns=TRUE) |>
+                setname(gcms[-1], ntype="dim", dim=1) |>
+                setname("gcm", ntype="ndn", dim=1)
+
+
+            ##########
+            ## monthly climatology bias plot
+
+            if(test) {
+                dev.new(width=10, height=7)
+            } else {
+                png(file=paste0(mplotdir,"/bias.", mplotbase),
+                    width=10, height=7, units="in", res=120)
+            }
+
+            main <- paste(meth, mname, "climatology bias")
+            gridmap(lon, lat, monbias, facets, cmaps=anomap,
+                    zlims=biaslim, units=uaunits, main=main,
+                    mapcol="black", arrowcol="darkgray")
+
+            if(!test){ dev.off() }
+
+
             ###########
             ## monthly climatology change
 
