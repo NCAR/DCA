@@ -10,7 +10,7 @@ tweak <- function(C, x){
 
 ## colormap for absolute variable values
 climap <- list(
-    U850=brewer.puor(N),
+    U850=rev(brewer.puor(N)),
     V850=brewer.piyg(N),
     Q850=rev(cubehelix(N)),
     T700=inferno(N),
@@ -19,8 +19,6 @@ climap <- list(
     U250=parula(N),
     V250=brewer.piyg(N),
     A850=rev(cubehelix(N)),
-#    S250=rev(cubehelix(N))
-#    S250=parula(N)
     S250=brewer.rdylgn(N)
     )  
 
