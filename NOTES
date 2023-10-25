@@ -142,7 +142,7 @@ BARPLOT
 
 GRIDMAPS
 #	plot UA variance
-	(be setup to drop LOCA if needed)
+.	(be setup to drop LOCA if needed)
 #	stat summary of Q850 delta plots
 #		zoom in on region: 4 corners states + equiv east
 #		mask out same mountains in all runs
@@ -152,9 +152,8 @@ GRIDMAPS
 x		other similarity metric, e.g. SSIM?
 x			SpatialPack / spatialcompare pkgs
 #	future deltas
-	combined gridmap of May climatology
-	combined gridmap of May climatology bias vs obs
-
+#	combined gridmap of May climatology bias vs obs
+	May obs wet-day absolute climatology for diagram
 
 A) barplots.R				# barplots of bucket stats
 
