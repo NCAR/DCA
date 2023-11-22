@@ -87,8 +87,12 @@ write.csv(metrics, file="plot/corr.wet.delta.csv", row.names=FALSE)
 ###
 
 gcol <- c(HadGEM=2, MPI=4, GFDL=3) # red, blue, green
+fade <- 0.3
+lcol <- adjustcolor(gcol, fade)
+names(lcol) <- names(gcol)
+lleg <- adjustcolor("black", fade)
 
-rsym <- c(raw=20,       # small dot
+rsym <- c(raw=19,       # big dot #raw=20,       # small dot
           RegCM4=2,     # up triangle
           WRF=6,        # down triangle
           CNN=13,       # crossed circle
@@ -98,8 +102,7 @@ rsym <- c(raw=20,       # small dot
           simple=45,    # -
           dummy=1)      # o
 
-#dev.new(width=10, height=10)
-png(file="plot/corr-mae.png", width=10, height=10, units="in", res=120)
+png(file="plot/corr-mae.png", width=6, height=6, units="in", res=180)
 par(mfcol=c(3,3), mar=c(3.1, 3.1, 2, 1), mgp=c(1.5,0.5,0))
 
 for (v in c("A850", "U850", "V850",
@@ -107,13 +110,69 @@ for (v in c("A850", "U850", "V850",
             "S250", "U250", "V250")){
     if(v == "legend"){
         plot(c(0,1), c(0,1), pch=NA, ann=FALSE, axes=FALSE)
-        legend("top", names(rsym), pch=rsym, ncol=2, cex=1.3)
-        legend("bottom", names(gcol), fill=gcol)
+        legend("top", names(rsym), pch=rsym, ncol=2, cex=0.9)
+        legend("bottomleft", names(gcol), fill=gcol, cex=0.8)
+        legend("bottomright", lty=1:3, col=lleg, cex=0.8,
+               c("dynamic", "spatial","point"))
     } else {
         m <- subset(metrics, vars==v & scen=="hist")
         plot(m$cor, m$mae, #xlim=c(-1,1), ylim=c(0,max(m$mae)),
          main=v, xlab="correlation", ylab="MAE",
          pch=rsym[m$method], col=gcol[m$gcm], cex=1.3)
+
+        for(g in names(gcol)){
+            mm <- subset(m, gcm==g & method != "dummy")
+            segments(mm[1,"cor"], mm[1,"mae"], mm[-1,"cor"], mm[-1,"mae"],
+                     col=lcol[g], lty=c(1,1,2,2,2,3,3))
+        }
     }
 }
 dev.off()
+
+
+## average correlations
+## convert MAE to rank product statistic
+
+calcrps <- function(df, colname){
+    df$rps <- 1/rank(df[[colname]])
+    return(df)
+}
+
+## geometric mean
+gmean <- function(x){exp(mean(log(x)))}
+
+
+## apply to only some columns
+capply <- function(X, MARGIN, FUN, COLS, ...){
+    X[,COLS] <- apply(X[,COLS], MARGIN, FUN, ...)
+    return(X)
+}
+    
+met2 <- subset(metrics, scen=="hist",
+               select=c("method","gcm", "vars","cor","mae")) |>
+    split(~ vars + gcm) |>
+    lapply(calcrps, "mae") |>
+    do.call(what=rbind)
+
+
+mcor <- split(met2, ~ method) |> lapply('[[',"cor") |> sapply(mean)
+mrps <- split(met2, ~ method) |> lapply('[[',"rps") |> sapply(gmean)
+
+m3 <- sqrt(mcor*mrps) |> sort(dec=TRUE)
+#? m3 <- (mcor+mrps)/2 |> sort(dec=TRUE)
+print(format(m3, digits=2))
+barplot(m3, las=2, main="metric")
+
+mgcor <- split(met2, ~ method + gcm) |> lapply('[[',"cor") |> sapply(mean)
+mgrps <- split(met2, ~ method + gcm) |> lapply('[[',"rps") |> sapply(gmean)
+mg3 <- (mgcor+mgrps)/2
+
+mg33 <- c(sort(mg3[1:9+9]), NA, sort(mg3[1:9]), NA, sort(mg3[1:9+18])) |> rev()
+
+par(las=2, mar=c(8,4,4,1))
+barplot(mg33, main="metric", col=c(rep(4,9), NA, rep(3,9), NA, rep(2,9)))
+
+print(format(mg33, digits=3))
+
+
+
