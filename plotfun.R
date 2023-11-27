@@ -157,11 +157,10 @@ distplots <- function(x, y, xylim=narange(x,y),
 
 ## @param alen: arrowhead length (default 0.015)
 
-## @param concol: color for contours (default: white)
-
-## @param conlwd: line width for contours (default: 2)
-
-## @param concex: cex (absolute) for contour labels (default: 0.8)
+## @param conargs: list of arguments to contour() call
+## these arguments are added to / overwrite the following defaults:
+## list(add=TRUE, col="white", labcex=0.8, lwd=2, method="edge",
+##      vfont=c("sans serif", "bold"))
 
 ## @param pointargs: a list of arguments to points() added to each panel
 
@@ -192,7 +191,8 @@ gridmap <- function(x, y, z,
                     mapcol='darkgray', maplwd=1/2,
                     halo=FALSE, hcolor="white", hwidth=2,
                     arrowcol="contrast", fatten=FALSE, alen=0.015,
-                    concol="white", conlwd=2, concex=0.8,
+                    conargs=list(col="white", labcex=0.8, lwd=2, method="edge",
+                                 vfont=c("sans serif", "bold")),
                     pointargs=NULL,
                     spacing=c(1,1,1,1)/20, cbhi=0,
                     margi=c(2,3,5,3,2,2)/8, uniti=1/8,
@@ -282,11 +282,15 @@ gridmap <- function(x, y, z,
 
             ## add contours if contour variable defined
             if(!is.null(cv <- facets[[f,"contour"]])){
-                ## aim for multiples of 50/100, not 20
-                lev <- pretty(zlims[[cv]]) #, u5.bias=5)
-                contour(x, y, z[C,cv,,], add=TRUE, method="edge", lwd=conlwd,
-                        levels = lev, col=concol, labcex=concex,
-                        vfont=c("sans serif", "bold"))
+                
+                defaults <- list(add=TRUE, col="white", labcex=0.8, lwd=2,
+                                 levels=pretty(zlims[[cv]]), method="edge",
+                                 vfont=c("sans serif", "bold"))
+
+                carg <- list(x=x, y=y, z=z[C,cv,,])
+                carg[names(defaults)] <- defaults
+                carg[names(conargs)]  <- conargs
+                do.call(what=contour, args=carg)
             }
             if(!is.null(pointargs)){
                 do.call(points, pointargs)

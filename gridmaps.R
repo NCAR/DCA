@@ -1,6 +1,7 @@
 ## Make grid plots of climatology, anomaly, etc.
 
 library(abind)
+library(spatstat.geom)
 
 source("plotfun.R")
 source("names.R")
@@ -342,8 +343,8 @@ for(loc in unique(ameta$loc)){
                         gridmap(lon, lat, deltadata[[b]], bfacets, cmaps=anomap,
                                 zlims=deltalim, units=uaunits, main=main,
                                 mapcol="black", pointargs=testpt,
-                                arrowcol="darkgray", concol="darkgray",
-                                margi=c(2,5,5,3,2,2)/8, concex=0.6)
+                                conarg=list(col="darkgray", labcex=0.6),
+                                arrowcol="darkgray", margi=c(2,5,5,3,2,2)/8)
 
                         pct <- with(subset(bfreq, bucket==b),
                                     pct[match(gcm, gnames)]) |>
@@ -355,6 +356,47 @@ for(loc in unique(ameta$loc)){
                         if(!test){
                             dev.off()
                         }
+
+                        ##########################################
+                        
+                        ## fancy delta plot:
+                        ## absolute 250 mb winds instead of delta
+                        ## with jetstream
+                        ## better contours on Z700
+
+                        
+                        if(test) {
+                            dev.new(width=10, height=9)
+                        } else {
+                            png(file=paste0(lplotdir,"/fancy.", scenario, ".", b, ".", bpbase),
+                                width=10, height=9, units='in', res=120)
+                        }
+                        
+                        main <- paste(bmeth, mname, "UA", b,
+                                      "anomaly difference,", scenario, loc)
+
+                        conlev <- seq(-25,25, by=5)
+                        conlty <- c(rep(3,5), 1, rep(2,5))
+
+                        gridmap(lon, lat, deltadata[[b]], bfacets, cmaps=anomap,
+                                zlims=deltalim, units=uaunits, main=main,
+                                mapcol="black", pointargs=testpt, arrowcol="darkgray",
+                                conargs=list(col="gray30", levels=conlev, lty=conlty,
+                                             labcex=0.6),
+                                margi=c(2,5,5,3,2,2)/8)
+
+                        pct <- with(subset(bfreq, bucket==b),
+                                    pct[match(gcm, gnames)]) |>
+                            sprintf(fmt="%#.1f%% of days")
+                        par(mfrow=c(1,1), oma=c(0,2,0,0))
+                        mtext(pct, side=2, outer=TRUE, line=1/2, cex=0.8,
+                              at=(4:1*2-1)/9+0.07)
+
+                        if(!test){
+                            dev.off()
+                        }
+                        ##########################################
+                        
                     } ## buckets
             } ## bmethods
             } ## scenario
