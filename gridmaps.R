@@ -364,6 +364,15 @@ for(loc in unique(ameta$loc)){
                         ## with jetstream
                         ## better contours on Z700
 
+                        subvars <- c("U250","V250","S250")
+                        fancydata <- deltadata
+                        for(b in buckets){
+                            fancydata[[b]][,subvars,,] <- absblock[b,bbaseids,subvars,,]
+                        }
+                        fancymap <- anomap
+                        fancymap[subvars] <- climap[subvars]
+                        fancylim <- deltalim
+                        fancylim[subvars] <- abslim[subvars]                        
                         
                         if(test) {
                             dev.new(width=10, height=9)
@@ -372,14 +381,14 @@ for(loc in unique(ameta$loc)){
                                 width=10, height=9, units='in', res=120)
                         }
                         
-                        main <- paste(bmeth, mname, "UA", b,
-                                      "anomaly difference,", scenario, loc)
+                        main <- paste(bmeth, mname, b, "day composite upper atmosphere,",
+                                      scenario, loc)
 
                         conlev <- seq(-25,25, by=5)
                         conlty <- c(rep(3,5), 1, rep(2,5))
 
-                        gridmap(lon, lat, deltadata[[b]], bfacets, cmaps=anomap,
-                                zlims=deltalim, units=uaunits, main=main,
+                        gridmap(lon, lat, fancydata[[b]], bfacets, cmaps=fancymap,
+                                zlims=fancylim, units=uaunits, main=main,
                                 mapcol="black", pointargs=testpt, arrowcol="darkgray",
                                 conargs=list(col="gray30", levels=conlev, lty=conlty,
                                              labcex=0.6),
