@@ -1,4 +1,5 @@
 library(maps)
+library(spatstat.geom)
 source("util.R")
 source("names.R")
 
@@ -193,6 +194,7 @@ gridmap <- function(x, y, z,
                     arrowcol="contrast", fatten=FALSE, alen=0.015,
                     conargs=list(col="white", labcex=0.8, lwd=2, method="edge",
                                  vfont=c("sans serif", "bold")),
+                    jetstream=NULL, jsargs=NULL, jskip=0,
                     pointargs=NULL,
                     spacing=c(1,1,1,1)/20, cbhi=0,
                     margi=c(2,3,5,3,2,2)/8, uniti=1/8,
@@ -266,6 +268,11 @@ gridmap <- function(x, y, z,
                             hlwd=ifelse(halo, hwidth, NA))
             mapply(halomap, dbs, regs, MoreArgs=mapargs)
 
+            ## add jetstream if defined
+            if(!is.null(jetstream) && jetstream == v){
+                plotjs(findjetstream(zz), skip=jskip, jsargs)
+            }
+            
             ## add arrows if vector variables defined
             if(!is.null(uv <- facets[[f,"vector"]])){
                 if(arrowcol == "contrast") {
@@ -450,3 +457,105 @@ polyfield <- Vectorize(vectorize.args=c("u","v","x","y"), SIMPLIFY=FALSE,
 ## tris <- polyfield(uu, vv, uu, vv, scale=1/2)
 ## polygon(do.call(rbind, tris))
 
+
+## Find the jetstream in a windspeed field: the highest-speed path
+## from the left to right side of the array.
+
+## Given a matrix of windspeeds, begin by finding the start and end
+## points - the highest points along the leftmost and rightmost
+## columns.  Mark those as part of the path.  Then repeatedly drop the
+## lowest pixel in the matrix.  If that would break the remaining
+## pixels into two separate blobs, mark the pixel as part of the path.
+## When all pixels have been dropped, iterate removing branch-ends
+## (pixels with only one neighbor) until there are none left.
+
+## Relies on spatstats.geom::connected() to determine whether removing
+## a pixel would split things into two unconnected blobs.
+
+## @param diag: whether to count diagonals as adjacent; default TRUE
+
+## return value: a boolean matrix the same size as x where TRUE values
+## are part of the jetstream path.
+
+## Notes: there are probably all kinds of untested corner cases this
+## will break on if the data isn't actually wind data with a jetstream
+## in it.  The function assumes that the path does not go along the
+## upper or lower edge of the matrix, and will probably give bad
+## results if it does.  It's also pretty slow, so don't recalculate it
+## if you don't need to.
+
+findjetstream <- function(wind, diag=TRUE){
+    stopifnot(is.matrix(wind))
+    ## remember that matrices are treated as [x,y] even though it's col-major
+    ny <- ncol(wind)
+    nx <- nrow(wind)
+
+    frozen <- !is.finite(wind)  ## start by excluding NA values
+    frozen[1,  which.max(wind[1,]) ] <- TRUE
+    frozen[nx, which.max(wind[nx,])] <- TRUE
+
+    ## Erode x from low to high to get frozen path
+    for(d in order(wind)){
+        wind[d] <- NA
+        con <- spatstat.geom::im(is.finite(wind) | frozen) |>
+            spatstat.geom::connected(connect=ifelse(diag,8,4))
+        if(length(levels(con$v)) > 1){
+            frozen[d] <- TRUE
+        }
+    }
+    ## obviously very fragile
+    frozen[,1]  <- FALSE
+    frozen[,ny] <- FALSE
+
+    ## Remove branches from path
+    flag <- TRUE
+    while(flag){
+        flag <- FALSE
+        for(x in 2:(nx-1)){
+            for(y in 2:(ny-1)){
+                if(frozen[x,y]){
+                    if(sum(frozen[x+(-1:1), y+(-1:1)]) < 3){                       
+                        frozen[x,y] <- FALSE
+                        flag <- TRUE
+                    }
+                }
+            }
+        }
+    }
+    return(frozen)
+}
+
+
+## helper function
+
+mag <- function(x,y){
+    ((x-y)^2) |> sum() |> sqrt()
+}
+
+plotjs <- function(path, skip=0, lineargs=list()){
+
+    defaults <- list(lwd=8, col=adjustcolor("white",0.5))
+        
+    stopifnot(skip >= 0)
+    jet <- which(t(path), arr=TRUE)
+    nj <- nrow(jet)
+    
+    jet <- jet[seq(1, nj, length=nj/(skip+1)),]    
+               
+    ## Check for & fix out-of-order pairs.  Probably not needed for
+    ## real data.  Breaks if there's a loop in the path, but that
+    ## shouldn't be true for real data.
+    #    for(i in 1:(nrow(jet)-2)){
+    #        if(mag(jet[i,], jet[i+1,]) > mag(jet[i,], jet[i+2,])){
+    #            jet[c(i+1,i+2),] <- jet[c(i+2,i+1),]
+    #        }
+    #    }
+
+    jlon <- dimnames(path)$lon[jet[,"lon"]]
+    jlat <- dimnames(path)$lat[jet[,"lat"]]
+
+    larg <- list(x=jlon, y=jlat)
+    larg[names(defaults)] <- defaults
+    larg[names(lineargs)] <- lineargs
+    do.call(what=lines, args=larg)
+}
