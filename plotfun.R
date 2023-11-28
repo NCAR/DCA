@@ -525,12 +525,16 @@ findjetstream <- function(wind, diag=TRUE){
     return(frozen)
 }
 
+## find jetstream - better algorithm
 
-## helper function
+## foreach row: start in leftmost column
+## follow u,v arrow to next column - it'll be between 2 gridcells
+## interpolate (weighted mean) 2 adjacent gridcells to get new u,v vector - follow it
+## record the latitude & interpolated wind speed
+## continue until you run off the edge of the map
+## find the stream with the highest wind speed sum
+## that's the jet stream
 
-mag <- function(x,y){
-    ((x-y)^2) |> sum() |> sqrt()
-}
 
 plotjs <- function(path, skip=0, lineargs=list()){
 
@@ -540,17 +544,7 @@ plotjs <- function(path, skip=0, lineargs=list()){
     jet <- which(t(path), arr=TRUE)
     nj <- nrow(jet)
     
-    jet <- jet[seq(1, nj, length=nj/(skip+1)),]    
-               
-    ## Check for & fix out-of-order pairs.  Probably not needed for
-    ## real data.  Breaks if there's a loop in the path, but that
-    ## shouldn't be true for real data.
-    #    for(i in 1:(nrow(jet)-2)){
-    #        if(mag(jet[i,], jet[i+1,]) > mag(jet[i,], jet[i+2,])){
-    #            jet[c(i+1,i+2),] <- jet[c(i+2,i+1),]
-    #        }
-    #    }
-
+    jet <- jet[seq(1, nj, length=nj/(skip+1)),]
     jlon <- dimnames(path)$lon[jet[,"lon"]]
     jlat <- dimnames(path)$lat[jet[,"lat"]]
 
