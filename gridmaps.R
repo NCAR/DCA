@@ -325,6 +325,17 @@ for(loc in unique(ameta$loc)){
                     bfreq <- subset(bstat, month == mnum & locname == loc &
                                            method %in% c("gridMET", bmeth) &
                                            scen %in% c("obs", scenario))
+
+                    ## mixed delta & abos for fancy plots
+                    subvars <- c("U250","V250","S250")
+                    fancydata <- deltadata
+                    for(b in buckets){
+                        fancydata[[b]][,subvars,,] <- absblock[b,bbaseids,subvars,,]
+                    }
+                    fancymap <- anomap
+                    fancymap[subvars] <- climap[subvars]
+                    fancylim <- deltalim
+                    fancylim[subvars] <- abslim[subvars]
                     
                     
                     ## delta (bucket anom - month anom)
@@ -363,16 +374,6 @@ for(loc in unique(ameta$loc)){
                         ## absolute 250 mb winds instead of delta
                         ## with jetstream
                         ## better contours on Z700
-
-                        subvars <- c("U250","V250","S250")
-                        fancydata <- deltadata
-                        for(b in buckets){
-                            fancydata[[b]][,subvars,,] <- absblock[b,bbaseids,subvars,,]
-                        }
-                        fancymap <- anomap
-                        fancymap[subvars] <- climap[subvars]
-                        fancylim <- deltalim
-                        fancylim[subvars] <- abslim[subvars]                        
                         
                         if(test) {
                             dev.new(width=10, height=9)
@@ -391,7 +392,7 @@ for(loc in unique(ameta$loc)){
                                 zlims=fancylim, units=uaunits, main=main,
                                 mapcol="black", pointargs=testpt, arrowcol="darkgray",
                                 conargs=list(col="gray30", levels=conlev, lty=conlty,
-                                             labcex=0.6),
+                                             labcex=0.6), #jetstream="S250", jskip=0,
                                 margi=c(2,5,5,3,2,2)/8)
 
                         pct <- with(subset(bfreq, bucket==b),
