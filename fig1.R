@@ -2,12 +2,13 @@
 ## processes
 
 library(fields) # for 2x2 obs wet clim plot mixing abs & anom
-library(spatstat.geom)
 
 source("plotfun.R")
 source("names.R")
 source("util.R")
 source("~/climod/R/renest.R")
+source("~/climod/R/atsign.R")
+source("jetstream.R")
 
 load("data/rdata/misc.Rdata")
 load("data/rdata/ua.meta.Rdata")
@@ -132,6 +133,12 @@ do.call(points, testpt)
 
 vectorfield(lon, lat, wetclim["U250",,], wetclim["V250",,], col=1)
 
+
+sjs <- simplejet(wetclim["U250",,], wetclim["V250",,], lon, lat)
+jetstream <- sjs[[which.max(sjs@cumspeed)]]
+lines(jetstream, lwd=5, col=adjustcolor("white",0.5))
+
+
 ### 700-mb temp & pressure
 
 imagePlot(lon, lat, wetanom["T700",,], horizontal=TRUE,
@@ -165,66 +172,15 @@ map(add=TRUE, lwd=1/2, "world", c("Can","Mex"))
 do.call(points, testpt)
 
 #############
-## streamline: drop lowest pixel in field.  If it breaks
-## connectivity, freeze that pixel as part of shortest path.
-## When all pixels dropped, iterate removing branch-ends
-## (pixels with only 1 neighbor) until none are left
+## Jetstream
 
-## slow - don't recalculate if we don't need to
-if(!exists("frozen")){
-
-    nx <- length(lon)
-    ny <- length(lat)
-
-    working <- wetclim["S250",,]
-    frozen <- !is.finite(working)
-    frozen[1, which.max(working[1,])] <- TRUE
-    frozen[nx, which.max(working[nx,])] <- TRUE
-
-    ## erode working to get frozen path
-    for(d in order(working)){
-        working[d] <- NA
-        cim <- im(is.finite(working) | frozen)
-        con <- connected(cim)
-        if(length(levels(con$v)) > 1) {
-            frozen[d] <- TRUE
-        }
-    }
-    frozen[,1] <- FALSE
-
-    ## remove branches from path
-    flag <- TRUE
-    while(flag){
-        flag <- FALSE
-        for(x in 2:(nx-1)){
-            for(y in 1:ny){
-                if(frozen[x,y]){
-                    if(sum(frozen[x+(-1:1), y+(-1:1)]) < 3){                       
-                        frozen[x,y] <- FALSE
-                        flag <- TRUE
-                    }
-                }
-            }
-        }
-    }
-}
-
-#jcol <- adjustcolor("black",0.3)
 jcol <- adjustcolor(tail(climap$S250,1),0.5)
 
-jet <- which(t(frozen), arr=TRUE)
+lines(jetstream, col=jcol, lwd=8)
 
-jx <- jet[,"lon"]
-jy <- jet[,"lat"]
-
-jlon <- lon[jx]
-jlat <- lat[jy]
-
-i4 <- seq(1, nx, by=4)
-
-lines(jlon[i4], jlat[i4], col=jcol, lwd=8)
-arrows(jlon[i4],jlat[i4],jlon[i4+4],jlat[i4+4], col="white", lwd=2, length=0.1)
-arrows(jlon[i4],jlat[i4],jlon[i4+4],jlat[i4+4], col=jcol, lwd=2, length=0)
+arrows(head(jetstream$x,-1), head(jetstream$y,-1),
+       tail(jetstream$x,-1), tail(jetstream$y,-1),
+       col=c(NA, "white", NA))
 
 
 #############
@@ -243,7 +199,6 @@ text(lon[hiind[1]], lat[hiind[2]], "H", cex=4, col=red)
 
 contour(lon, lat, wetanom["Z700",,], add=TRUE, method="edge",
         lwd=2, drawlabels=FALSE,
-#        vfont=c("sans serif", "bold"), labcex=0.6,
         levels=c(-10,0,20), lty=1, col=c(blu, gray, red))
 
 
@@ -260,16 +215,6 @@ vectorfield(lon, lat, wetclim["U850",,], wetclim["V850",,],
 
 title(main="salient features driving precipitation",
       cex.main=1, line=3/4)
-
-
-
-##imagePlot(lon, lat, wetclim["A850",,], horizontal=TRUE,
-##          col=climap$A850, zlim=c(0,max(wetclim["A850",,])),
-##          ann=FALSE, mgp=c(3,1,0)/2, cex.axis=0.8, tcl=-0.4,
-##          axis.args=axargs, legend.shrink=0.8)
-##
-##amap <- bwcontrast(climap$A850)[unitize(wetclim["A850",,])*255]
-##
 
         
 if(!test){
