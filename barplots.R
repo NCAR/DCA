@@ -8,7 +8,7 @@ outdir <- "plot/bucket"
 mnum <- paste0("m", sprintf("%02d",1:12))
 names(mnum) <- month.abb
 
-gcms <- c("HadGEM","MPI","GFDL")  ## ordered by ECS
+gcms <- c("HadGEM","GFDL","MPI")  ## ordered by quality
 
 ## whether to include LOCA in figures
 loca <- TRUE

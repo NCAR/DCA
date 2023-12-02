@@ -13,6 +13,8 @@ load("data/rdata/ua.meta.Rdata")
 load("plot/cmaps.Rdata")
 load("data/buckets.Rdata")
 
+## reorder GCMs from better to worse
+gcms <- c("ERAI", "MPI", "GFDL", "HadGEM")
 
 ## TRUE = plot onscreen, FALSE = plot to file
 #test = TRUE
