@@ -21,7 +21,7 @@ gcms <- c("ERAI", "MPI", "GFDL", "HadGEM")
 test = FALSE
 
 ## plots to skip while testing
-skip <- c("baseline", "monclim", "bias", "change", "anomaly", "delta")
+skip <- c("baseline", "bias", "change", "anomaly", "delta", "fancy")
 
 if(test){
     buckets <- rev(buckets)  ## plot wet first
@@ -36,6 +36,8 @@ xr <- c(-135,-55)
 yr <- c(20,60)
 bounds <- list(lon=xr, lat=yr)
 
+## for jetstream overlays
+white50 <- adjustcolor("white", 0.5)
 
 infiles <- dir("data/anom", rec=TRUE, full=TRUE)
 
@@ -178,7 +180,16 @@ for(loc in unique(ameta$loc)){
             mondata <- abind(anom$clim[baseids], along=0,
                              use.dnns=TRUE, new.names=gnamelist)
 
-            
+            ## calculate streamfunction for jetstream
+            md <- asplit(mondata, 1)
+            for(g in gcms){
+                monpsi <- streamfunction(md[[g]]["U250",,],
+                                         md[[g]]["V250",,],
+                                         lon, lat, transform=flip)
+                md[[g]] <- abind(md[[g]], PSI=monpsi, along=1)
+            }
+            jsmondata <- abind(md, along=0)
+
             ###########
             ## combined monthly climatology plot
             
@@ -206,8 +217,11 @@ for(loc in unique(ameta$loc)){
 
                 main <- paste("hist", meth, mname,
                               "upper atmosphere climatology")
-                gridmap(lon, lat, mondata, facets, cmaps=climap, zlims=abslim,
-                        units=uaunits, main=main, mapcol="black")
+
+                gridmap(lon, lat, jsmondata, facets, cmaps=climap,
+                        zlims=abslim, units=uaunits, main=main,
+                        mapcol="black", arrowcol="darkgray", streamline="S250",
+                        streamargs=list(var="PSI", lwd=5, col=white50))
 
                 if(!test) {dev.off()}
             }
@@ -422,8 +436,6 @@ for(loc in unique(ameta$loc)){
                         ## absolute 250 mb winds instead of delta
                         ## with jetstream
                         ## better contours on Z700
-
-                        white50 <- adjustcolor("white", 0.5)
 
                         if(test && "fancy" %in% skip) { ## do nothing
                         } else {
