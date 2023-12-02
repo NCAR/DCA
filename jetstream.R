@@ -1,70 +1,74 @@
-## Functions for calculating and visualizing the jetstream.
 
-## Simple approximation.  Starts with a point at the middle of each
-## gridcell in the leftmost column.  Moves from left to right,
-## calculating where the point would move vertically in a single step
-## to the next column, doing linear interpolation in the y-direction.
-
-## Also accumulates the total speed along each stream so that you can
-## pick the fastest one.
+###############################
+## Proper jetstream calculation
 
 
-simplejet <- function(U, V, lon, lat){
-    streams  <- list()
-    cumspeed <- c()
+## numerical integration using Simpson's Rule:
+## https://en.wikipedia.org/wiki/Simpson's_rule
 
-    ## assuming they are arranged for image-type plotting 
-    nx <- length(lon)
-    ny <- length(lat)
-    
-    stopifnot(identical(dim(U), dim(V)) |
-              identical(dim(U) , c(nx, ny)))
+## given diff(x0,x1,x2) = (h,h), integral of F from x0 to x2 ~=
+## h/3 * (F(x0) + 4*F(x1) + f(x2)
 
+## x = integrand; h = spacing between points.
+simpson <- function(x, h){
+    stopifnot(length(h)==1)
 
-    for(y in 1:ny){
-        ss <- sqrt(U[1,y]^2 + V[1,y]^2)
-        sy <- i <- y
+    n <- length(x)
 
-        for(x in 2:nx){
+    if(n<2){return(0)}
 
-            north <- ceiling(i)
-            south <- floor(i)
+    if(n==2){return(h*sum(x)/2)}
 
-            sfrac <- i %% 1
-            nfrac <- 1 - sfrac
-        
-            unorth <- U[x,north]
-            vnorth <- V[x,north]
-            usouth <- U[x,south]
-            vsouth <- V[x,south]
-            
-            ubar <- unorth * nfrac + usouth * sfrac
-            vbar <- vnorth * nfrac + vsouth * sfrac
-
-            ss[x] <- sqrt(ubar^2 + vbar^2)
-            sy[x] <- sy[x-1] + vbar / ubar
-
-            # stop when streams run off grid
-            if(sy[x] < 1 || sy[x] > ny){ break }
-        }
-        cumspeed[y] <- sum(ss)
-        streams[[y]] <- sy        
+    if(n %% 2){
+        # n odd -> even number of intervals
+        k <- c(1, 4, rep(c(2,4),(n-1)/2 -1), 1)
+        return(h/3 * sum(x*k))
+    } else {
+        # n even -> odd number of intervals
+        # do the first three intervals using Simpson's 3/8 rule
+        return(h*3/8 * sum(c(1,3,3,1)*x[1:4]) + simpson(x[4:n], h))
     }
+}
 
-    # ## check: convert ragged list into matrix & plot
-    # S <- lapply(streams, \(s){length(s)<-nx;s}) |>
-    #     do.call(what=cbind)
-    # matplot(S, type="l", lwd=3)
-    
-    ## convert index values into lat-lon coordinates
 
-    jets <- list()
-    for(i in 1:ny){
-        s <- streams[[i]]
-        jets[[i]] <- list(x = lon[1:length(s)],
-                          y = approx(1:ny, lat, s)$y)
-    }
-    
-    attr(jets, "cumspeed") <- cumspeed
-    return(jets)
+## apply f to x[1], x[1:2], x[1:3] ... x[n]
+cumfun <- function(x, f, ...){
+    g <- function(index,var){var[index]}
+    n <- length(x)
+    lapply(1:n, seq) |>
+        lapply(FUN=g, var=x) |>
+        sapply(f, ...) 
+}
+
+
+## Quick way to deal with rcm missing values in lower corners: flip
+## field around before integrating
+
+flip <- function(M){
+    apply(M,2,rev) |> apply(1, rev) |> t()
+}
+
+
+## Proper jetstream calculation: integrate the velocity field using
+## Simpson's Rule to get the vector potential psi; streamlines are
+## then contours of constant psi.
+## U = d psi/dy & V = - d psi/dx
+
+## Use transform=flip for missing values in lower corners
+
+streamfunction <- function(U, V, lon, lat, transform=I, ...){
+    dx <- mean(diff(lon))
+    dy <- mean(diff(lat))
+
+    dn <- dimnames(U)
+
+    U <- transform(U, ...)
+    V <- transform(V, ...)
+
+    psi <- t(dy * apply(U, 1, cumfun, simpson, h=dy)) -
+             dx * apply(V, 2, cumfun, simpson, h=dx)
+    dimnames(psi) <- dn
+
+    psi <- transform(psi, ...)
+    return(psi)
 }

@@ -131,12 +131,17 @@ map(add=TRUE, lwd=1/2, "state", ".")
 map(add=TRUE, lwd=1/2, "world", c("Can","Mex"))
 do.call(points, testpt)
 
-vectorfield(lon, lat, wetclim["U250",,], wetclim["V250",,], col=1)
+U <- wetclim["U250",,]
+V <- wetclim["V250",,]
 
 
-sjs <- simplejet(wetclim["U250",,], wetclim["V250",,], lon, lat)
-jetstream <- sjs[[which.max(sjs@cumspeed)]]
-lines(jetstream, lwd=5, col=adjustcolor("white",0.5))
+vectorfield(lon, lat, U, V, col=1)
+
+psi <- streamfunction(U, V, lon, lat)
+pjet <- psi[which.max(wetclim["S250",,])]
+jetstream <- contourLines(lon, lat, psi, levels = pjet)[[1]]
+
+lines(jetstream, lwd=5, col=adjustcolor("white", 0.5))
 
 
 ### 700-mb temp & pressure
@@ -174,7 +179,12 @@ do.call(points, testpt)
 #############
 ## Jetstream
 
-jcol <- adjustcolor(tail(climap$S250,1),0.5)
+jcol <- adjustcolor(tail(climap$S250,1),0.3)
+
+contour(lon, lat, psi, levels=pjet,
+        add=TRUE, drawlabels=FALSE, 
+        lwd=5, col=jcol)
+
 
 lines(jetstream, col=jcol, lwd=8)
 

@@ -193,7 +193,7 @@ gridmap <- function(x, y, z,
                     arrowcol="contrast", fatten=FALSE, alen=0.015,
                     conargs=list(col="white", labcex=0.8, lwd=2, method="edge",
                                  vfont=c("sans serif", "bold")),
-                    jetstream=NULL, jsargs=NULL, jskip=0,
+                    streamline=NULL, streamargs=NULL,
                     pointargs=NULL,
                     spacing=c(1,1,1,1)/20, cbhi=0,
                     margi=c(2,3,5,3,2,2)/8, uniti=1/8,
@@ -267,9 +267,36 @@ gridmap <- function(x, y, z,
                             hlwd=ifelse(halo, hwidth, NA))
             mapply(halomap, dbs, regs, MoreArgs=mapargs)
 
-            ## add jetstream if defined
-            if(!is.null(jetstream) && jetstream == v){
-                plotjs(findjetstream(zz), skip=jskip, jsargs)
+            ## add streamlines if defined
+            if(!is.null(streamline) && streamline == v){
+                psi <- z[C,streamargs$var,,]
+
+                spd <- z[C,"S250",,]
+                nx <- nrow(psi)
+
+                ## jestream: take median of psi values corresponding
+                ## to points along left & right edges where speed > 25
+                ## m/s & lat between 30 & 50.  (Use > 25 m/s instead
+                ## of 30~= 60 knots b/c WRF & RegCM4 both have low
+                ## biases around 5 m/s in those areas; using > 30,
+                ## they sometimes don't exist.)
+
+                clip <- lat > 30 & lat < 50
+
+                psilev <- c(psi[1,  which(spd[1,]  > 25 & clip)],
+                            psi[nx, which(spd[nx,] > 25 & clip)]) |>
+                    median() |> na.omit()
+                
+                psicon <- contourLines(lon, lat, psi, levels=psilev)
+                np <- length(psicon)
+                if(np > 0){
+                    for(p in 1:np){
+                        largs <- streamargs
+                        largs$var <- NULL
+                        largs$x <- psicon[[p]]
+                        do.call(what=lines, largs)
+                    }
+                }
             }
             
             ## add arrows if vector variables defined
