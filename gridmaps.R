@@ -419,7 +419,7 @@ for(loc in unique(ameta$loc)){
                                     margi=c(2,5,5,3,2,2)/8)
 
                             pct <- with(subset(bfreq, bucket==b),
-                                        pct[match(gcm, gnames)]) |>
+                                        pct[match(gnames, gcm)]) |>
                                 sprintf(fmt="%#.1f%% of days")
                             par(mfrow=c(1,1), oma=c(0,2,0,0))
                             mtext(pct, side=2, outer=TRUE, line=1/2, cex=0.8,
@@ -472,7 +472,7 @@ for(loc in unique(ameta$loc)){
                                     margi=c(2,5,5,3,2,2)/8)
 
                             pct <- with(subset(bfreq, bucket==b),
-                                        pct[match(gcm, gnames)]) |>
+                                        pct[match(gnames, gcm)]) |>
                                 sprintf(fmt="%#.1f%% of days")
                             par(mfrow=c(1,1), oma=c(0,2,0,0))
                             mtext(pct, side=2, outer=TRUE, line=1/2, cex=0.8,
