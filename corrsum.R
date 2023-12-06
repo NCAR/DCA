@@ -98,8 +98,8 @@ rsym <- c(raw=19,       # big dot #raw=20,       # small dot
           CNN=13,       # crossed circle
           LOCA=8,       # *
           SDSM=3,       # +
-          qdm=39,       # '
-          simple=45,    # -
+          qdm=126,      # ~
+          simple=124,   # |
           dummy=1)      # o
 
 png(file="plot/corr-mae.png", width=6, height=6, units="in", res=180)
