@@ -20,8 +20,8 @@ gcms <- c("ERAI", "MPI", "GFDL", "HadGEM")
 #test = TRUE
 test = FALSE
 
-## plots to skip while testing
-skip <- c("baseline", "bias", "change", "anomaly", "delta", "fancy")
+## plots to skip while testing   ## "unibias",
+skip <- c("baseline", "monclim", "bias", "change", "anomaly", "delta", "fancy")
 
 if(test){
     buckets <- rev(buckets)  ## plot wet first
@@ -489,3 +489,66 @@ for(loc in unique(ameta$loc)){
         } ## meth
     }  ## mon
 }  ## loc
+
+
+
+##########
+## unified moisture advection bias plot for dynamical methods
+
+## Will need to go inside mon/loc loops if we ever do that
+
+
+if(test & "unibias" %in% skip){ ## do nothing
+} else {
+    if(test) {
+        dev.new(width=10, height=7)
+    } else {
+        unifile <- paste("unibias", mon, "png", sep=".")
+        png(file=paste0(mplotdir,"/", unifile),
+            width=10, height=7, units="in", res=120)
+    }
+
+    ## note: ordering is fragile here...
+    biasids <- rownames(ameta)[with(ameta, month==mon &
+                                           scen=="hist" &
+                                           method %in% dynmethods)]
+
+    ## Terrible hack: gridmap takes array[ens,var,lon,lat]; ens = gcm,
+    ## pretend var = var+method
+
+    blist <- list()
+    for(v in c("A850", "U850", "V850")){
+        for(m in rev(dynmethods)){
+            bids <- rownames(ameta)[with(ameta, month==mon &
+                                                scen=="hist" &
+                                                method==m)]
+            blist[[paste(v,m,sep='.')]] <- biasblock[bids,v,,]
+        }
+    }
+
+    bdata <- abind(blist, along=1.5)
+    dimnames(bdata)[[1]] <- gcms[-1]
+
+
+    brast <- paste0("A850.", rev(dynmethods)) |> as.list()
+    bvec <- outer(c("U850","V850"), rev(dynmethods), paste, sep='.') |>
+        as.data.frame() |> as.list()
+
+    bfacets <- as.data.frame(row.names=rev(dynmethods),
+                             cbind(
+                                 raster=brast,
+                                 vector=bvec,
+                                 contour=list(NULL, NULL, NULL),
+                                 title=rev(dynmethods))) #list("","","")))
+
+    bzlim <- list(); for(v in brast){bzlim[[v]] <- anomlim$A850}
+    bcmap <- list(); for(v in brast){bcmap[[v]] <- anomap$A850}
+    bunits <- c();   for(v in brast){bunits[[v]] <- uaunits["A850"]}
+    gridmap(lon, lat, bdata, bfacets, cmaps=bcmap, zlim=bzlim,
+            mapcol="black", arrowcol="darkgray", units=bunits,
+            main="May 850-mb moisture advection climatology bias")
+
+    if(!test){
+        dev.off()
+    }
+}
