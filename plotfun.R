@@ -199,6 +199,8 @@ gridmap <- function(x, y, z,
                     margi=c(2,3,5,3,2,2)/8, uniti=1/8,
                     ...){
 
+    ## save to reset par after plotting
+    orig.par <- par(no.readonly=TRUE)
     
     ## fill in any missing defaults
 
@@ -224,7 +226,7 @@ gridmap <- function(x, y, z,
 
     ## if single range given, reuse for all facets
     if(!is.list(zlims)){
-        zlims <- rep(list(zlims), nm) |> setname(rownames(facets))
+        zlims <- rep(list(zlims), nf) |> setname(rownames(facets))
     }
 
     ## if no cmap given, use rwb palette
@@ -234,7 +236,7 @@ gridmap <- function(x, y, z,
 
     ## if single cmap given, reuse for all vars
     if(!is.list(cmaps)){
-        cmaps <- rep(list(cmaps), nm) |> setname(rownames(facets))
+        cmaps <- rep(list(cmaps), nf) |> setname(rownames(facets))
     }
 
 
@@ -349,6 +351,7 @@ gridmap <- function(x, y, z,
         image(x=cbx, z=cbz, col=cbmap, yaxt='n')
         mtext(gsub(" ", "\n", units[v]), side=2, las=2, cex=0.7, line=1/4)
     }
+    par(orig.par)
 }
 
 
