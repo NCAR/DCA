@@ -12,12 +12,8 @@ gcms <- c("HadGEM","GFDL","MPI")  ## ordered by quality
 
 test <- FALSE
 
-## whether to include LOCA in figures
-loca <- TRUE
-
 skip <- function(x, y){ x[!(x %in% y)] }
-dropme <- if(loca) {"gridMET"} else {c("gridMET","LOCA")}
-methods <- levels(bstat$method) |> skip(dropme)
+methods <- levels(bstat$method) |> skip("gridMET")
 nm <- length(methods)
 
 
@@ -59,10 +55,8 @@ for(invert in c(TRUE, FALSE)){
                     cex.axis=1.2)
 
                 for(GCM in gcms){
-                    dropme <- if(loca) {""} else {"LOCA"}
                     pbs <- subset(bstat, month==mon & locname==loc &
-                                         gcm %in% c(GCM,"ERAI") &
-                                         !(method %in% dropme))
+                                         gcm %in% c(GCM,"ERAI"))
 
                     ## create NA array, fill in appropriate slots in 3 copies
                     pctarr <- array(dim=c(3, 1+3*nm),
@@ -152,22 +146,15 @@ for(invert in c(TRUE, FALSE)){
 
         ## annual cycle plots        
         
-        if(loca){
-            dropme <- c("dummy")
-            panels <- c(3,3)
-            size <- list(width=8, height=5)
-        } else {
-            dropme <- c("dummy","LOCA")
-            panels <- c(4,2)
-            size <- list(width=5.5, height=7)
-        }
-        
+        panels <- c(3,3)
+        size <- list(width=8, height=5)
+
         for(GCM in gcms){
             for(s in scen[-1]){
                 ann <- subset(bstat, locname==loc &
                                      gcm %in% c("ERAI",GCM) &
                                      scen %in% c(s, "obs") &
-                                     !(method %in% dropme)) |>
+                                     !(method == "dummy")) |>
                     split(~ method + gcm + scen, drop=TRUE) |>
                     lapply(subset, subset=TRUE,
                            select=c("bucket","month","pct")) |>
@@ -185,8 +172,7 @@ for(invert in c(TRUE, FALSE)){
                     outfile <- paste0(odir, '/', outname, ".png")
                     do.call(png, c(list(file=outfile, units="in", res=120), size))
                 }
-                # do.call(dev.new, size)
-                #  dev.new(width=8, height=4)
+
                 par(mfcol=panels, las=2, oma=c(3,0,3,0),
                     mar=c(3,2.5,2,0.5), mgp=c(3,0.5,0))
                 for(i in names(ann)){
