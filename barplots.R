@@ -10,6 +10,8 @@ names(mnum) <- month.abb
 
 gcms <- c("HadGEM","GFDL","MPI")  ## ordered by quality
 
+test <- FALSE
+
 ## whether to include LOCA in figures
 loca <- TRUE
 
@@ -45,11 +47,13 @@ for(invert in c(TRUE, FALSE)){
             
             for(ptype in c("change", "grouped")){
 
-                outname <- paste("bucket","bar", ptype, mnum[mon], loc, sep='.')
-                outfile <- paste0(odir, '/', outname, ".png")
-                png(outfile, units="in", res=120, height=9, width=8)
-                
-                #            dev.new(height=9,width=8)
+                if(test){
+                    dev.new(height=9,width=8)
+                } else {
+                    outname <- paste("bucket","bar", ptype, mnum[mon], loc, sep='.')
+                    outfile <- paste0(odir, '/', outname, ".png")
+                    png(outfile, units="in", res=120, height=9, width=8)
+                }
 
                 par(mar=c(1,4,2,0), mfrow=c(length(gcms),1), oma=c(5,0,5,2),
                     cex.axis=1.2)
@@ -139,8 +143,10 @@ for(invert in c(TRUE, FALSE)){
                 mtext(side=2, ifun(buckets), at=1:3, adj=1, line=0.5, cex=2/3)
                 mtext(side=1, names(bmap), at=1:3, cex=2/3)
                 par(reset)
-                
-                dev.off()
+
+                if(!test){
+                    dev.off()
+                }
             }
         }
 
@@ -171,10 +177,14 @@ for(invert in c(TRUE, FALSE)){
                     lapply(tail, n=c(NA,-1)) |>
                     lapply(as.matrix) |>
                     lapply(setname, nm=list(buckets, month.abb), ntype="all")
-                
-                outname <- paste("cycle", "bar", s, GCM, loc, sep='.')
-                outfile <- paste0(odir, '/', outname, ".png")
-                do.call(png, c(list(file=outfile, units="in", res=120), size))
+
+                if(test){
+                    do.call(dev.new, size)
+                } else {
+                    outname <- paste("cycle", "bar", s, GCM, loc, sep='.')
+                    outfile <- paste0(odir, '/', outname, ".png")
+                    do.call(png, c(list(file=outfile, units="in", res=120), size))
+                }
                 # do.call(dev.new, size)
                 #  dev.new(width=8, height=4)
                 par(mfcol=panels, las=2, oma=c(3,0,3,0),
@@ -189,10 +199,10 @@ for(invert in c(TRUE, FALSE)){
                 par(mfrow=c(1,1), oma=rep(0,4), mar=rep(0,4), new=TRUE)
                 plot(0:1, 0:1, type='n', axes=FALSE, ann=FALSE)
                 legend("bottom", ifun(buckets), fill=bmap$hist, horiz=TRUE)
-                dev.off()
+                if(!test){
+                    dev.off()
+                }
             }
         }
     }
 }
-
-
