@@ -10,7 +10,7 @@ names(mnum) <- month.abb
 
 gcms <- c("HadGEM","GFDL","MPI")  ## ordered by quality
 
-test <- TRUE
+test <- FALSE
 
 
 skip <- function(x, y){ x[!(x %in% y)] }
@@ -33,10 +33,8 @@ for(loc in "SGP-98-36"){
         
         month <- month.abb[mon]
         
-#        for(ptype in c("change", "grouped")){
-        for(ptype in c("grouped", "change")){
-
-                
+        for(ptype in c("change", "grouped")){
+            
             if(test){
                 dev.new(height=8,width=9)
             } else {
@@ -45,15 +43,12 @@ for(loc in "SGP-98-36"){
                 png(outfile, units="in", res=120, height=9, width=8)
             }
 
-#            par(mar=c(1,4,2,0), mfrow=c(1,length(gcms)), oma=c(5,0,5,2),
-#                cex.axis=1.2)
-
             reset <- par(no.readonly=TRUE)
             par(mfrow=c(1,length(gcms)), mar=c(5,3,0,0), oma=c(0,3,5,2), cex.axis=1.2)
-        
+            
             for(GCM in rev(gcms)){
                 pbs <- subset(bstat, month==mon & locname==loc &
-                                         gcm %in% c(GCM,"ERAI"))
+                                     gcm %in% c(GCM,"ERAI"))
 
                 ## create NA array, fill in appropriate slots in 3 copies
                 if(ptype == "change"){
@@ -63,7 +58,7 @@ for(loc in "SGP-98-36"){
                     pctarr <- array(dim=c(3, 1+1+nm+1+nm),
                                     dimnames=list(bucket=rev(buckets), method=NULL))
                 }
-                                    
+                
                 inject <- function(x,a,i){ a[,i] <- x; return(a)}
                 gsbar <- list(hist=pctarr, rcp85=pctarr, obs=pctarr)
                 if(ptype == "change"){
@@ -74,7 +69,7 @@ for(loc in "SGP-98-36"){
 
                 ## reverse ordering, top to bottom
                 slots <- lapply(slots, \(x){ncol(pctarr)+1-x})
-                    
+                
                 gsbar <- split(pbs[,c("scen","method","bucket","pct")],~scen) |>
                     lapply(reshape, direction="wide", drop="scen",
                            idvar="bucket", timevar="method") |>
@@ -87,19 +82,16 @@ for(loc in "SGP-98-36"){
                 if(ptype == "change"){
                     barwidth <- c(w, rep(c(1,w,w), nm)) |> rev()
                 } else {
-                    barwidth <- c(w, 1, rep(w, nm), 1, rep(w, nm)) |> rev()#, rep(0, nm-3))
+                    barwidth <- c(w, 1, rep(w, nm), 1, rep(w, nm)) |> rev()
                 }
-                    
+                
                 ## blank plot w/ axes
-                bpx <- barplot(pctarr, xlim=c(0,100), width=barwidth, yaxt='n', horiz=TRUE)
+                bpx <- barplot(pctarr, xlim=c(0,100), width=barwidth,
+                               yaxt='n', horiz=TRUE)
                 if(GCM == tail(gcms,1)){
                     if(ptype == "change"){
-#                        ax <- c((bpx[1:nm*3] + bpx[1:nm*3 + 1])/2, bpx[1]) |> rev()
-#                        axis(side=2, las=1, labels=c(methods, "obs"), at=ax)
                         ax <- c((bpx[1:nm*3-2] + bpx[1:nm*3-1])/2, bpx[nm*3+1])
                         axis(side=2, las=1, labels=c(rev(methods),"obs"), at=ax)
-#                        ax <- c(bpx[1], (bpx[1:nm*3] + bpx[1:nm*3 + 1])/2)
-#                        axis(side=1, las=3, labels=c("obs",methods), at=ax)
                     } else {
                         axis(side=2, las=1, labels=c(methods,methods,"obs"),
                              at = unlist(sapply(slots, \(x){bpx[x]})))
@@ -116,7 +108,7 @@ for(loc in "SGP-98-36"){
                 }
 
                 ## lines on top for obs & raw hist gcm
-                ## use segments b/c for some reason abline extends too far right
+                ## use segments b/c for some reason abline extends too far
                 bary <- tail(bpx,1) + diff(tail(bpx,2)) * 0.6 |> rep(4)
                 obsx <- subset(pbs, scen=="obs")$pct |>
                                                rev() |>
@@ -127,7 +119,6 @@ for(loc in "SGP-98-36"){
                                                                 cumsum() |>
                                                                 head(-1)
                 
-                #segments(rep(0,4), c(obsy, rawy), barx, c(obsy,rawy),
                 segments(c(obsx, rawx), rep(0,4), c(obsx, rawx), bary,
                          col='red', lty=c("solid","solid","dotted","dotted"))
             }
@@ -154,51 +145,51 @@ for(loc in "SGP-98-36"){
         }
     }
 
-#    ## annual cycle plots        
-#        
-#    panels <- c(3,3)
-#    size <- list(width=8, height=5)
-#    
-#    for(GCM in gcms){
-#        for(s in scen[-1]){
-#            ann <- subset(bstat, locname==loc &
-#                                 gcm %in% c("ERAI",GCM) &
-#                                 scen %in% c(s, "obs") &
-#                                 !(method == "dummy")) |>
-#                split(~ method + gcm + scen, drop=TRUE) |>
-#                lapply(subset, subset=TRUE,
-#                       select=c("bucket","month","pct")) |>
-#                lapply(reshape, dir="wide",
-#                       idvar="bucket",
-#                       timevar="month") |>
-#                lapply(tail, n=c(NA,-1)) |>
-#                lapply(as.matrix) |>
-#                lapply(setname, nm=list(buckets, month.abb), ntype="all")
-#
-#            if(test){
-#                do.call(dev.new, size)
-#            } else {
-#                outname <- paste("cycle", "bar", s, GCM, loc, sep='.')
-#                outfile <- paste0(outdir, '/', outname, ".png")
-#                do.call(png, c(list(file=outfile, units="in", res=120), size))
-#            }
-#            
-#            par(mfcol=panels, las=2, oma=c(3,0,3,0),
-#                mar=c(3,2.5,2,0.5), mgp=c(3,0.5,0))
-#            for(i in names(ann)){
-#                wetdry <- apply(ann[[i]], 2, rev)
-#                cmap <- bmap[sapply(scen, grepl, i)] |> unlist()
-#                barplot(wetdry, main=i, col=cmap)
-#            }
-#            mtext(paste(GCM,"wet/dry days,", loc), outer=TRUE, side=3, las=1)
-#            ## outer margin legend
-#            par(mfrow=c(1,1), oma=rep(0,4), mar=rep(0,4), new=TRUE)
-#            plot(0:1, 0:1, type='n', axes=FALSE, ann=FALSE)
-#            legend("bottom", rev(buckets), fill=bmap$hist, horiz=TRUE)
-#            if(!test){
-#                dev.off()
-#            }
-#        }
-#    }
+    ## annual cycle plots        
+        
+    panels <- c(3,3)
+    size <- list(width=8, height=5)
+    
+    for(GCM in gcms){
+        for(s in scen[-1]){
+            ann <- subset(bstat, locname==loc &
+                                 gcm %in% c("ERAI",GCM) &
+                                 scen %in% c(s, "obs") &
+                                 !(method == "dummy")) |>
+                split(~ method + gcm + scen, drop=TRUE) |>
+                lapply(subset, subset=TRUE,
+                       select=c("bucket","month","pct")) |>
+                lapply(reshape, dir="wide",
+                       idvar="bucket",
+                       timevar="month") |>
+                lapply(tail, n=c(NA,-1)) |>
+                lapply(as.matrix) |>
+                lapply(setname, nm=list(buckets, month.abb), ntype="all")
+
+            if(test){
+                do.call(dev.new, size)
+            } else {
+                outname <- paste("cycle", "bar", s, GCM, loc, sep='.')
+                outfile <- paste0(outdir, '/', outname, ".png")
+                do.call(png, c(list(file=outfile, units="in", res=120), size))
+            }
+            
+            par(mfcol=panels, las=2, oma=c(3,0,3,0),
+                mar=c(3,2.5,2,0.5), mgp=c(3,0.5,0))
+            for(i in names(ann)){
+                wetdry <- apply(ann[[i]], 2, rev)
+                cmap <- bmap[sapply(scen, grepl, i)] |> unlist()
+                barplot(wetdry, main=i, col=cmap)
+            }
+            mtext(paste(GCM,"wet/dry days,", loc), outer=TRUE, side=3, las=1)
+            ## outer margin legend
+            par(mfrow=c(1,1), oma=rep(0,4), mar=rep(0,4), new=TRUE)
+            plot(0:1, 0:1, type='n', axes=FALSE, ann=FALSE)
+            legend("bottom", rev(buckets), fill=bmap$hist, horiz=TRUE)
+            if(!test){
+                dev.off()
+            }
+        }
+    }
 }
 
