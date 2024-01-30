@@ -174,5 +174,132 @@ barplot(mg33, main="metric", col=c(rep(4,9), NA, rep(3,9), NA, rep(2,9)))
 
 print(format(mg33, digits=3))
 
+## This doesn't really seem right.
+
+## I think the rank product statistic isn't working & we need to
+## normalize by variable.  Maybe also handle (vector) winds
+## differently, but first let's just try normalizing.
+
+## Check distributions
+
+## (Skip Z500, since it's not included in plots and is highly
+## correlated with Z700)
+
+mvars <- vars[!vars %in% "Z500"]
+
+omean <- apply(obs, 1, mean, na.rm=TRUE)
+osd   <- apply(obs, 1, sd, na.rm=TRUE)
+
+dev.new()
+par(mfrow=c(3,3))
+for(v in mvars){
+    plot(density(obs[v,,], na.rm=TRUE), main=v)
+    rug(obs[v,,])
+    abline(v=omean[v])
+    abline(v=omean[v]+osd[v], lty=2)
+    abline(v=omean[v]-osd[v], lty=2)
+}
+
+## T700 is bimodal!  So that makes sigma weird.  Let's try interdecile
+## range instead (10th to 90th percentiles).  We can also compare it
+## to 2x IQR
+
+opctl <- apply(obs, 1, quantile, na.rm=TRUE,
+               probs=c(0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95))
+iqr <- opctl["75%",] - opctl["25%",]
+
+dev.new()
+par(mfrow=c(3,3))
+for(v in mvars){
+    plot(density(obs[v,,], na.rm=TRUE), main=v)
+    rug(obs[v,,])
+    abline(v=omean[v])
+    abline(v=opctl["50%",v], col=2)
+    abline(v=opctl[c("25%","75%"),v], col=3)
+    abline(v=opctl[c("10%","90%"),v], col=4)
+    abline(v=opctl[c("5%","95%"),v], col=5)
+    abline(v=omean[v]+iqr[v], lty=2)
+    abline(v=omean[v]-iqr[v], lty=2)
+}
 
 
+## The interdecile range looks good and I can describe it using a
+## single term, so let's use that.
+
+idr <- opctl["90%",] - opctl["10%",]
+
+
+## Update metrics to include MAE scaled by IDR
+
+for(v in vars){
+    mask <- metrics$vars == v
+    metrics$err[mask] <- metrics$mae[mask]/idr[v]
+}
+
+
+metrics$cor[metrics$scen=="obs"] <- 1
+metrics$mae[metrics$scen=="obs"] <- 0
+metrics$err[metrics$scen=="obs"] <- 0
+
+## Redo scatterplot with uniform axes
+
+
+png(file="plot/corr-mae-unif.png", width=6, height=6, units="in", res=180)
+par(mfcol=c(3,3), mar=c(3.1, 3.1, 2, 1), mgp=c(1.5,0.5,0))
+
+for (v in c("A850", "U850", "V850",
+            "T700", "legend", "Z700",
+            "S250", "U250", "V250")){
+    if(v == "legend"){
+        plot(c(0,1), c(0,1), pch=NA, ann=FALSE, axes=FALSE)
+        legend("top", names(rsym), pch=rsym, ncol=2, cex=0.9)
+        legend("bottomleft", names(gcol), fill=gcol, cex=0.8)
+        legend("bottomright", lty=1:3, col=lleg, cex=0.8,
+               c("dynamic", "spatial","point"))
+    } else {
+        m <- subset(metrics, vars==v & scen=="hist")
+        plot(m$cor, m$err, xlim=c(-1,1), ylim=c(0,1),
+             main=v, xlab="correlation", ylab="scaled error",
+             pch=rsym[m$method], col=gcol[m$gcm], cex=1.3)
+
+        for(g in names(gcol)){
+            mm <- subset(m, gcm==g & method != "dummy")
+            segments(mm[1,"cor"], mm[1,"err"], mm[-1,"cor"], mm[-1,"err"],
+                     col=lcol[g], lty=c(1,1,2,2,2,3,3))
+        }
+    }
+}
+dev.off()
+
+
+## Now redo metric and barplot.  Now that everything is on the same
+## scale, I think we can just do Manhattan distance from the lower
+## right corner.
+
+metrics$cred <- metrics$cor - metrics$err
+
+cred <- xtabs(cred ~ gcm+method, data=metrics, subset=metrics$scen=="hist")
+cred <- cred[c("HadGEM","GFDL","MPI"),rev(methods[-1])] / 10
+
+barplot(cred, beside=TRUE, horiz=TRUE, las=1, xlim=c(-1.5,1),
+        col=c(HadGEM=2,GFDL=3,MPI=4), main="credibilty metric")
+
+## Okay!  I think that looks better.  However, I'm probaby
+## overweighting winds, and I think I need to do proper vector
+## correlations.
+
+
+## I think we need to do vector correlations for our winds.  So that
+## would be the inner product (geometry::dot()) of X1 & X2 divided by
+## the square roots of dot(X1,X1)*dot(X2,X2)
+
+## And if I'm doing that for winds, I probably need to do MAE for
+## speed, not U/V
+
+## And then I don't think the rank ordering method for MAE is really
+## right because it ignores the magnitude and implicitly weights all
+## the variables the same, which I think may be not right.
+
+## Maybe just divide by max MAE for each field?
+
+library(geometry)
