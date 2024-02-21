@@ -211,15 +211,15 @@ if(!test){ dev.off() }
 ## Since we've managed to get everything on the same scale, we can
 ## just do Manhattan distance from the lower-right corner.
 
-metrics$cred <- (metrics$cor - metrics$err + 2)/3
+metrics$cred <- (metrics$cor + (1 - metrics$err))/2
 
 credvars <- c("A850","T700","UV250","UV850","Q850","Z700","Z500")
 
 cred <- xtabs(cred ~ gcm + method,
               data=subset(metrics, scen=="hist" & vars %in% credvars))
 
-## reorder for plotting, divide by num methods
-cred <- cred[names(gcol), methods[-1]] / 10
+## reorder for plotting, divide by num vars
+cred <- cred[names(gcol), methods[-1]] / length(credvars)
 
 if(test){
 dev.new(width=4, height=4)
@@ -229,7 +229,7 @@ dev.new(width=4, height=4)
 par(mar=c(4.5, 4.5, 2, 2))
 
 plot(t(unclass(cred)), rep(9:1, 3), pch=rep(rsym, 3),
-     col=rep(gcol, each=9), xlim=c(0, max(cred)), cex=1.5,
+     col=rep(gcol, each=9), xlim=c(-1/4, 1), cex=1.5,
      xlab="relative credibility score", ylab='', yaxt='n')
 axis(side=2, at=9:1, labels=methods[-1], las=2)
 
