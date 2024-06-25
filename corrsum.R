@@ -139,8 +139,10 @@ numcols <- c("cor","mae", "err")
 metrics[numcols] <- lapply(metrics[numcols], round, digits=3)
 factcols <- c("method","scen","gcm")
 metrics[factcols] <- lapply(metrics[factcols], as.character)    
-    
-write.csv(metrics, file="plot/corr.wet.delta.csv", row.names=FALSE)
+
+if(!test){
+    write.csv(metrics, file="plot/corr.wet.delta.csv", row.names=FALSE)
+}
 
 ########
 ### plot
@@ -162,80 +164,87 @@ rsym <- c(raw=19,       # big dot #raw=20,       # small dot
           simple=124,   # |
           dummy=1)      # o
 
+for(sc in c("hist","rcp85")){
 
-if(test){
-    dev.new()
-} else {
-    png(file="plot/corr-mae.png", width=6, height=6, units="in", res=180)
+  if(test){
+      dev.new()
+  } else {
+      png(file=paste("plot/corr-mae",sc,"png", sep="."),
+          width=6, height=6, units="in", res=180)
+  }
+  
+  par(mfrow=c(3,3), mar=c(3.1, 3.1, 2, 1), mgp=c(1.5,0.5,0))
+  
+  for (v in c("A850",  "T700", "UV250",
+              "UV850", "Z700", "legend",
+              "Q850",  "Z500", "map")){
+      if(v %in% metvars){ 
+          m <- subset(metrics, vars==v & scen==sc)
+          plot(m$cor, m$err, xlim=c(-1,1), ylim=c(0,1.5),
+               xlab="correlation", ylab="scaled error",
+               main=metvarnames[v], cex=1.3,
+               pch=rsym[m$method], col=gcol[m$gcm])
+                  
+          for(g in names(gcol)){
+              mm <- subset(m, gcm==g & method != "dummy")
+              segments(mm[1,"cor"], mm[1,"err"], mm[-1,"cor"], mm[-1,"err"],
+                       col=lcol[g], lty=c(1,1,2,2,2,3,3))
+          }
+      } else {
+          if(v == "legend"){
+          plot(c(0,1), c(0,1), pch=NA, ann=FALSE, axes=FALSE)
+          legend("top", names(rsym), pch=rsym, ncol=2, cex=0.9)
+          legend("bottomleft", names(gcol), fill=gcol, cex=0.8)
+          legend("bottomright", lty=1:3, col=lleg, cex=0.8,
+                 c("dynamic", "spatial","point"))
+          }
+          if(v == "map"){
+              plot(NA, xlim=xlim, ylim=ylim, main="analysis region",
+                   xlab="lon", ylab="lat")
+              map("state", ".", add=TRUE)
+              points(locx, locy, pch=23, col="black", bg="red")
+          }
+      }
+  }
+  if(!test){ dev.off() }
+  
+  
+  ##############
+  ## credibility 
+  
+  ## Since we've managed to get everything on the same scale, we can
+  ## just do Manhattan distance from the lower-right corner.
+  
+  metrics$cred <- (metrics$cor + (1 - metrics$err))/2
+  
+  credvars <- c("A850","T700","UV250","UV850","Q850","Z700","Z500")
+  
+  cred <- xtabs(cred ~ gcm + method,
+                data=subset(metrics, scen==sc & vars %in% credvars))
+  
+  ## reorder for plotting, divide by num vars
+  cred <- cred[names(gcol), methods[-1]] / length(credvars)
+  
+  if(test){
+      dev.new(width=4, height=4)
+  } else {
+      png(file=paste("plot/credibility",sc,"png", sep='.'),
+          width=4, height=4, units="in", res=180)
+  }
+  par(mar=c(4.5, 4.5, 2, 2))
+  
+  plot(t(unclass(cred)), rep(9:1, 3), pch=rep(rsym, 3),
+       col=rep(gcol, each=9), xlim=c(-1/4, 1), cex=1.5,
+       xlab="relative credibility score", ylab='', yaxt='n',
+       main=sc)
+  axis(side=2, at=9:1, labels=methods[-1], las=2)
+  
+  abline(v=cred[,"raw"], col=lcol)
+  abline(v=cred[,"dummy"], col=lcol, lty=2)
+
+  legloc = c(hist="topleft", rcp85="top")  
+  legend(legloc[sc], names(gcol), fill=gcol, cex=4/5)
+  
+  if(!test){dev.off()}
+  
 }
-
-par(mfrow=c(3,3), mar=c(3.1, 3.1, 2, 1), mgp=c(1.5,0.5,0))
-
-for (v in c("A850",  "T700", "UV250",
-            "UV850", "Z700", "legend",
-            "Q850",  "Z500", "map")){
-    if(v %in% metvars){ 
-        m <- subset(metrics, vars==v & scen=="hist")
-        plot(m$cor, m$err, xlim=c(-1,1), ylim=c(0,1.5),
-             xlab="correlation", ylab="scaled error",
-             main=metvarnames[v], cex=1.3,
-             pch=rsym[m$method], col=gcol[m$gcm])
-                
-        for(g in names(gcol)){
-            mm <- subset(m, gcm==g & method != "dummy")
-            segments(mm[1,"cor"], mm[1,"err"], mm[-1,"cor"], mm[-1,"err"],
-                     col=lcol[g], lty=c(1,1,2,2,2,3,3))
-        }
-    } else {
-        if(v == "legend"){
-        plot(c(0,1), c(0,1), pch=NA, ann=FALSE, axes=FALSE)
-        legend("top", names(rsym), pch=rsym, ncol=2, cex=0.9)
-        legend("bottomleft", names(gcol), fill=gcol, cex=0.8)
-        legend("bottomright", lty=1:3, col=lleg, cex=0.8,
-               c("dynamic", "spatial","point"))
-        }
-        if(v == "map"){
-            plot(NA, xlim=xlim, ylim=ylim, main="analysis region",
-                 xlab="lon", ylab="lat")
-            map("state", ".", add=TRUE)
-            points(locx, locy, pch=23, col="black", bg="red")
-        }
-    }
-}
-if(!test){ dev.off() }
-
-
-##############
-## credibility 
-
-## Since we've managed to get everything on the same scale, we can
-## just do Manhattan distance from the lower-right corner.
-
-metrics$cred <- (metrics$cor + (1 - metrics$err))/2
-
-credvars <- c("A850","T700","UV250","UV850","Q850","Z700","Z500")
-
-cred <- xtabs(cred ~ gcm + method,
-              data=subset(metrics, scen=="hist" & vars %in% credvars))
-
-## reorder for plotting, divide by num vars
-cred <- cred[names(gcol), methods[-1]] / length(credvars)
-
-if(test){
-dev.new(width=4, height=4)
-} else {
-    png(file="plot/credibility.png", width=4, height=4, units="in", res=180)
-}
-par(mar=c(4.5, 4.5, 2, 2))
-
-plot(t(unclass(cred)), rep(9:1, 3), pch=rep(rsym, 3),
-     col=rep(gcol, each=9), xlim=c(-1/4, 1), cex=1.5,
-     xlab="relative credibility score", ylab='', yaxt='n')
-axis(side=2, at=9:1, labels=methods[-1], las=2)
-
-abline(v=cred[,"raw"], col=lcol)
-abline(v=cred[,"dummy"], col=lcol, lty=2)
-
-legend("topleft", names(gcol), fill=gcol, cex=4/5) 
-
-if(!test){dev.off()}
