@@ -1,10 +1,8 @@
-#### LAST WORKING ON gridmaps.R
-
 
 GENERAL NOTES
 
 MPAS is unsynchronized, which explains why there's no signal.
-If there's no synchrony, it can't fit into this framework...
+If there's no synchrony, it can't fit into this framework.
 
 -------------
 SCRIPTS
@@ -76,7 +74,7 @@ data/prec/SGP.all.Rdata			# precip data w/ stat downscaling
 
 4) bucket.R maps precip to wet/moist/dry days & calculates stats
 
-data/buckets.Rdata			# stats of precip aggregated by amount
+data/buckets.Rdata			# stats of precip aggregated by amt
 
 buckets					# dry / moist / wet
 theta					# 3 mm threshold
@@ -115,55 +113,6 @@ $delta$bucket[var,lon,lat]			# banom - anom
 
 
 -------------
-DATA
-	Double-check HadGEM UA, no calendar issues
-#	WRF - divide zg upstream by 9.8 (gravity)
-#		(convert geopotential to geopotential height)
-#		fix Z.nc files on glade
-#		rerun ingest.R
-#		download new ua.Rdata files
-#		rerun calc.R then anomaly.R
-#		remove special-case code in gridmaps, variance & rerun
-#	RCM precip - *IS* bc, should be raw
-#	    	fix on glade
-#		run extract.R on casper
-#		download new files
-#		rerun stat, bucket, misc, anomaly, gridmaps, bar, qq
-#	calculate variance of UA variables
-#	calculate A850 & S250 upstream
-
-BARPLOT
-#	add switch to invert (wet bucket on bottom), do both ways
-#	be setup to drop LOCA
-#	seasonal cycle of bucket fraction
-#	       month-by-month
-#	       panel by method w/ dyn & stat grouped
-	printed table of bucket %ages
-
-GRIDMAPS
-#	plot UA variance
-.	(be setup to drop LOCA if needed)
-#	stat summary of Q850 delta plots
-#		zoom in on region: 4 corners states + equiv east
-#		mask out same mountains in all runs
-#		stats:
-#		pattern correlation vs obs
-#		MAE vs obs
-x		other similarity metric, e.g. SSIM?
-x			SpatialPack / spatialcompare pkgs
-#	future deltas
-#	combined gridmap of May climatology bias vs obs
-	May obs wet-day absolute climatology for diagram
-
-A) barplots.R				# barplots of bucket stats
-
-
-B) gridmaps.R				# gridmaps of UA anomalies
-
-
-# C) eof.R				# PCA of UA
-
--------------
 
 date
 R -f ingest.R
@@ -171,112 +120,6 @@ date
 R -f bucket.R
 date
 R -f anomaly.R
-
-
--------------
-TODO
-
-# set lat/lon bounds:
-#    lat 20:60
-#    lon -135:-55
-
-# github repo
-
-# plotfun commentary
-
-# move .Rdata files into data
-
-# bucketize precip
-# bucket plots:
-# stacked barplot by method w/ o/c/f
-. unstacked "
-. iterate + gangplot
-.	by method?  by month (calendar layout?)
-. >> use ggplot
-
-# X use ggplot # .gangplot: layout + function + f'n args
-
-# calculate anomaly by bucket
-# gridmaps: may climatology (baseline + bucketized)
-# gridmaps: may anomaly (baseline + bucketized)
-# layout A & B: plot = bucket, row = method & vice-versa
-# all x o,c,f
-
-# ggplot instead X gridmap sub-function args as lists with do.call
-. vectorfield / quiver plot: colorized triangles
-. >> ggplot in progress
-
-dot plots for SGP - changes in precip
-    (w/ uncertainty, somehow?)
-
-wrangling: look for Melissa data on glade / campaign
-	Can-Can - can use if we change UA vars to CORDEX standard?
-
-other regions:
-      	Phoenix
-	Yakima river basin *
-      	Tuolumnee river basin *
-      	Upper CO r.b. @ Cameo CO *
-		* just pick a few points w/ good obs
-	upwind/downwind of mountain	
-
-surface data
-	>> see code outline in extract.R
-	- don't extract into point files
-	- write R code to pull from full files
-	(eventually iterate over domain to look for hotspots)
-
-	write scripts to generate derived on the fly
-		raw
-	     	shuffle
-		simple bc (theta + scale)
-		KDDM?
-		MBCn?
-		GLM
-	general buckets: dry / < 70 %ile / 70 %ile  (top tercile?)
-
-
-
-current vs future intsp
-
-## Punting, no time
-# # PCA on daily may anomalies
-# varimax rotation on modes
-
-
-
-precip distplots: all, month
-
-instp precip plots w/ calendar layout?
-
-
-taylor diagrams: anomaly (current and future)
-taylor diagrams: change pattern
-
-
-mismatch days 3x3 barchart
-mismatch days anomaly gridmaps (subset by acceptable # days)
-
-
-## punting - no time
-# ssim similarity matrix on may daily anomalies
-# total = linear sum of SSIM for each variable
-# also f(prec) [factor(bucket) = (0,1,2)/2?] as component of total?
-# hclust on ssim matrix
-# PCA based on ssim matrix?
-#
-# distributions of ssim by bucket mismatch
-#
-#
-# see self-email for packages for SSIM, PCA, varimax
-#
-#
-# add method: regression model(s?) using downscaleR
-# run over all CONUS gridcells?
-
-
-get util.R .checkargs() to work
-
 
 
 -------------------
